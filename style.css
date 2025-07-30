@@ -1,0 +1,26 @@
+body { 
+    font-family: 'Inter', sans-serif; 
+    -webkit-font-smoothing: antialiased; 
+    -moz-osx-font-smoothing: grayscale; 
+}
+.line-box { 
+    min-width: 60px; 
+    text-align: center; 
+}
+.swiper-slide { 
+    display: flex; 
+    justify-content: center; 
+    align-items: center; 
+    padding: 1rem; 
+}
+#date-scroller::-webkit-scrollbar { 
+    height: 4px; 
+}
+#date-scroller::-webkit-scrollbar-thumb { 
+    background-color: #4b5563; 
+    border-radius: 20px; 
+}
+.date-btn.active { 
+    background-color: #3B82F6; 
+    color: white; 
+}
