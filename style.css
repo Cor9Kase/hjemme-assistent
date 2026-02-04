@@ -1,26 +1,826 @@
-body { 
-    font-family: 'Inter', sans-serif; 
-    -webkit-font-smoothing: antialiased; 
-    -moz-osx-font-smoothing: grayscale; 
+/* 
+ * Remarkable-inspired Dashboard
+ * Paper-like aesthetic with e-ink feel
+ */
+
+:root {
+    --paper: #f8f6f1;
+    --paper-warm: #f3efe8;
+    --paper-dark: #e5e0d5;
+    
+    --ink: #2d2d2d;
+    --ink-medium: #555;
+    --ink-light: #888;
+    --ink-faint: #bbb;
+    
+    --cornelius: #2d2d2d;
+    --ida: #a67c52;
+    
+    --shadow-subtle: 0 1px 3px rgba(0,0,0,0.04);
+    --shadow-soft: 0 2px 8px rgba(0,0,0,0.06);
 }
-.line-box { 
-    min-width: 60px; 
-    text-align: center; 
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
-.swiper-slide { 
-    display: flex; 
-    justify-content: center; 
-    align-items: center; 
-    padding: 1rem; 
+
+html, body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    height: 100%;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
 }
-#date-scroller::-webkit-scrollbar { 
-    height: 4px; 
+
+/* Paper texture */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    opacity: 0.25;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+    z-index: 1000;
 }
-#date-scroller::-webkit-scrollbar-thumb { 
-    background-color: #4b5563; 
-    border-radius: 20px; 
+
+/* Typography */
+h1 {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-weight: 400;
+    font-size: 1.75rem;
+    letter-spacing: -0.02em;
 }
-.date-btn.active { 
-    background-color: #3B82F6; 
-    color: white; 
+
+h2 {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-weight: 400;
+    font-size: 0.8rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-light);
+    margin-bottom: 0.75rem;
+}
+
+/* Swiper */
+.main-swiper {
+    width: 100%;
+    height: 100%;
+}
+
+.swiper-slide {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 1.5rem;
+}
+
+.swiper-pagination-bullet {
+    width: 6px;
+    height: 6px;
+    background: var(--ink-faint);
+    opacity: 1;
+    transition: all 0.3s ease;
+}
+
+.swiper-pagination-bullet-active {
+    width: 20px;
+    border-radius: 3px;
+    background: var(--ink-medium);
+}
+
+/* Pages */
+.page {
+    width: 100%;
+    max-width: 600px;
+    height: 100%;
+    max-height: 800px;
+    background: var(--paper);
+    border: 1px solid var(--paper-dark);
+    box-shadow: var(--shadow-soft);
+    padding: 2rem;
+    overflow-y: auto;
+}
+
+.page-header {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid var(--paper-dark);
+}
+
+.page-subtitle {
+    font-size: 0.8rem;
+    color: var(--ink-light);
+    display: block;
+    margin-top: 0.25rem;
+}
+
+/* ==================== */
+/* OVERVIEW PAGE        */
+/* ==================== */
+.overview {
+    display: flex;
+    flex-direction: column;
+}
+
+.overview-header {
+    text-align: center;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--paper-dark);
+}
+
+.clock {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 5rem;
+    font-weight: 300;
+    letter-spacing: -0.03em;
+    line-height: 1;
+    display: block;
+}
+
+.date {
+    font-size: 1rem;
+    color: var(--ink-light);
+    margin-top: 0.5rem;
+    text-transform: capitalize;
+}
+
+.overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    flex: 1;
+}
+
+.card {
+    background: var(--paper-warm);
+    border: 1px solid var(--paper-dark);
+    padding: 1.25rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    min-height: 130px;
+    position: relative;
+    overflow: hidden;
+}
+
+.card:hover {
+    background: var(--paper-dark);
+    transform: translateY(-2px);
+}
+
+.card:active {
+    transform: scale(0.98);
+}
+
+.card-icon {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    width: 44px;
+    height: 44px;
+    color: var(--ink-medium);
+}
+
+.card-icon svg {
+    width: 100%;
+    height: 100%;
+}
+
+.card-album {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--paper-dark);
+    overflow: hidden;
+}
+
+.card-album img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.card-content {
+    flex: 1;
+}
+
+.card-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--ink-light);
+    margin-top: auto;
+    padding-top: 0.5rem;
+}
+
+.card .temp {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 2.75rem;
+    font-weight: 300;
+    display: block;
+    line-height: 1;
+}
+
+.card .condition {
+    font-size: 0.8rem;
+    color: var(--ink-medium);
+    display: block;
+    margin-top: 0.25rem;
+}
+
+.card .next-event,
+.card .next-bus,
+.card .now-playing {
+    font-size: 0.85rem;
+    color: var(--ink-medium);
+    line-height: 1.5;
+}
+
+.card .next-event strong,
+.card .next-bus strong,
+.card .now-playing strong {
+    color: var(--ink);
+    font-weight: 500;
+}
+
+/* ==================== */
+/* WEATHER PAGE         */
+/* ==================== */
+.weather-hero {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--paper-dark);
+}
+
+.weather-icon-large {
+    width: 100px;
+    height: 100px;
+    flex-shrink: 0;
+    color: var(--ink);
+}
+
+.weather-icon-large svg {
+    width: 100%;
+    height: 100%;
+}
+
+.weather-hero-info {
+    flex: 1;
+}
+
+.weather-temp-large {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 4.5rem;
+    font-weight: 300;
+    line-height: 1;
+    display: block;
+}
+
+.weather-desc {
+    font-size: 1.1rem;
+    color: var(--ink-medium);
+    display: block;
+    margin: 0.25rem 0 0.75rem;
+}
+
+.weather-details {
+    display: flex;
+    gap: 1.5rem;
+    font-size: 0.8rem;
+    color: var(--ink-light);
+}
+
+.weather-forecast {
+    margin-bottom: 1.5rem;
+}
+
+.forecast-hours,
+.forecast-days {
+    display: flex;
+    flex-direction: column;
+}
+
+.forecast-item {
+    display: flex;
+    align-items: center;
+    padding: 0.625rem 0;
+    border-bottom: 1px solid var(--paper-dark);
+    font-size: 0.875rem;
+}
+
+.forecast-item:last-child {
+    border-bottom: none;
+}
+
+.forecast-time {
+    color: var(--ink-light);
+    min-width: 70px;
+}
+
+.forecast-condition {
+    flex: 1;
+    color: var(--ink-medium);
+}
+
+.forecast-temp {
+    font-weight: 500;
+    min-width: 50px;
+    text-align: right;
+}
+
+/* ==================== */
+/* CALENDAR PAGE        */
+/* ==================== */
+.calendar-legend {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.75rem;
+    color: var(--ink-light);
+}
+
+.legend-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.legend-dot.cornelius {
+    background: var(--cornelius);
+}
+
+.legend-dot.ida {
+    background: var(--ida);
+}
+
+.calendar-dates {
+    display: flex;
+    gap: 0.25rem;
+    overflow-x: auto;
+    padding-bottom: 1rem;
+    margin-bottom: 1rem;
+    border-bottom: 1px solid var(--paper-dark);
+}
+
+.date-btn {
+    flex-shrink: 0;
+    width: 52px;
+    padding: 0.625rem 0.5rem;
+    text-align: center;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-radius: 8px;
+}
+
+.date-btn:hover {
+    background: var(--paper-warm);
+}
+
+.date-btn.active {
+    background: var(--ink);
+    color: var(--paper);
+}
+
+.date-btn.has-events::after {
+    content: '';
+    display: block;
+    width: 4px;
+    height: 4px;
+    background: var(--ida);
+    border-radius: 50%;
+    margin: 4px auto 0;
+}
+
+.date-btn.active.has-events::after {
+    background: var(--paper);
+}
+
+.date-btn .day-num {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 1.375rem;
+    display: block;
+    line-height: 1.2;
+}
+
+.date-btn .day-name {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--ink-light);
+}
+
+.date-btn.active .day-name {
+    color: var(--paper-dark);
+}
+
+/* Timeline Calendar */
+.calendar-timeline {
+    position: relative;
+    flex: 1;
+    overflow-y: auto;
+}
+
+.timeline-events {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.timeline-event {
+    display: flex;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: var(--paper-warm);
+    border-left: 3px solid var(--cornelius);
+    transition: all 0.2s;
+}
+
+.timeline-event.ida {
+    border-left-color: var(--ida);
+}
+
+.timeline-event:hover {
+    background: var(--paper-dark);
+}
+
+.event-time-block {
+    min-width: 55px;
+    text-align: right;
+    padding-right: 0.75rem;
+    border-right: 1px solid var(--paper-dark);
+}
+
+.event-time-start {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 1.1rem;
+    font-weight: 500;
+    display: block;
+}
+
+.event-time-end {
+    font-size: 0.7rem;
+    color: var(--ink-light);
+}
+
+.event-details {
+    flex: 1;
+}
+
+.event-title {
+    font-size: 0.95rem;
+    font-weight: 500;
+    margin-bottom: 0.125rem;
+}
+
+.event-location {
+    font-size: 0.75rem;
+    color: var(--ink-light);
+}
+
+.no-events {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--ink-light);
+    font-style: italic;
+}
+
+.no-events::before {
+    content: '○';
+    display: block;
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.3;
+}
+
+/* ==================== */
+/* BUS PAGE             */
+/* ==================== */
+.bus-list {
+    display: flex;
+    flex-direction: column;
+}
+
+.bus-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--paper-dark);
+}
+
+.bus-item:last-child {
+    border-bottom: none;
+}
+
+.bus-line {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 1.5rem;
+    font-weight: 600;
+    min-width: 40px;
+    text-align: center;
+}
+
+.bus-info {
+    flex: 1;
+}
+
+.bus-dest {
+    font-size: 0.95rem;
+}
+
+.bus-stop {
+    font-size: 0.7rem;
+    color: var(--ink-light);
+    margin-top: 0.125rem;
+}
+
+.bus-time {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 1.25rem;
+    font-weight: 500;
+    text-align: right;
+}
+
+.bus-time.soon {
+    color: var(--ink);
+}
+
+.bus-time small {
+    display: block;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 400;
+    color: var(--ink-light);
+}
+
+/* ==================== */
+/* SPOTIFY PAGE         */
+/* ==================== */
+.page-spotify {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.spotify-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+}
+
+.spotify-login {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.vinyl-placeholder {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    background: linear-gradient(145deg, var(--paper-dark) 0%, var(--ink-faint) 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.vinyl-icon {
+    font-size: 4rem;
+    color: var(--ink-light);
+}
+
+.spotify-login p {
+    color: var(--ink-light);
+    margin-bottom: 1.5rem;
+    font-size: 0.9rem;
+}
+
+.btn {
+    display: inline-block;
+    padding: 0.875rem 2.5rem;
+    background: none;
+    border: 1px solid var(--ink);
+    color: var(--ink);
+    text-decoration: none;
+    font-size: 0.8rem;
+    letter-spacing: 0.05em;
+    transition: all 0.2s ease;
+}
+
+.btn:hover {
+    background: var(--ink);
+    color: var(--paper);
+}
+
+/* Vinyl Record Player */
+.spotify-player {
+    width: 100%;
+}
+
+.spotify-player.hidden {
+    display: none;
+}
+
+.vinyl-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.vinyl {
+    width: 200px;
+    height: 200px;
+    border-radius: 50%;
+    background: linear-gradient(
+        135deg,
+        #1a1a1a 0%,
+        #2d2d2d 20%,
+        #1a1a1a 40%,
+        #2d2d2d 60%,
+        #1a1a1a 80%,
+        #2d2d2d 100%
+    );
+    position: relative;
+    box-shadow: 
+        0 4px 20px rgba(0,0,0,0.15),
+        inset 0 0 0 1px rgba(255,255,255,0.05);
+}
+
+.vinyl::before {
+    content: '';
+    position: absolute;
+    inset: 8px;
+    border-radius: 50%;
+    background: repeating-radial-gradient(
+        circle at center,
+        transparent 0px,
+        transparent 2px,
+        rgba(255,255,255,0.03) 2px,
+        rgba(255,255,255,0.03) 3px
+    );
+}
+
+.vinyl-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--paper-dark);
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(0,0,0,0.1);
+}
+
+.vinyl-label::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--ink);
+}
+
+.vinyl-label img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.vinyl.spinning {
+    animation: spin 3s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.track-info {
+    margin-bottom: 2rem;
+}
+
+.track-name {
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 1.5rem;
+    margin-bottom: 0.25rem;
+    max-width: 300px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.track-artist {
+    font-size: 0.9rem;
+    color: var(--ink-light);
+}
+
+.player-controls {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.control-btn {
+    width: 52px;
+    height: 52px;
+    background: none;
+    border: 1px solid var(--paper-dark);
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.control-btn:hover {
+    background: var(--paper-dark);
+    border-color: var(--ink-light);
+}
+
+.control-btn svg {
+    width: 22px;
+    height: 22px;
+    fill: var(--ink-medium);
+}
+
+.control-btn-main {
+    width: 68px;
+    height: 68px;
+    border-color: var(--ink);
+}
+
+.control-btn-main svg {
+    width: 28px;
+    height: 28px;
+    fill: var(--ink);
+}
+
+.control-btn-main:hover {
+    background: var(--ink);
+}
+
+.control-btn-main:hover svg {
+    fill: var(--paper);
+}
+
+.control-btn .icon-pause {
+    display: none;
+}
+
+.control-btn.playing .icon-play {
+    display: none;
+}
+
+.control-btn.playing .icon-pause {
+    display: block;
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--paper-dark);
+    border-radius: 2px;
+}
+
+/* Utilities */
+.hidden {
+    display: none !important;
 }
