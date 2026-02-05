@@ -99,43 +99,41 @@ export function BusPage() {
   }, []);
 
   return (
-    <div className="h-full p-2.5 pb-5 flex flex-col overflow-y-auto">
+    <div className="h-full p-2 pb-4 flex flex-col overflow-y-auto">
       {/* Departures Grid */}
-      <div className="grid grid-cols-2 gap-2.5 flex-1 overflow-y-auto">
+      <div className="grid grid-cols-2 gap-2 flex-1 overflow-y-auto">
         {departures.map((bus, i) => (
           <div
             key={i}
-            className={`bg-white/40 backdrop-blur-sm rounded-2xl border border-stone-200/50 shadow-sm p-2.5 hover:shadow-lg transition-all duration-300 cursor-pointer relative overflow-hidden group ${
-              bus.isSoon ? 'ring-2 ring-amber-400' : ''
+            className={`bg-white/40 backdrop-blur-sm rounded-xl border border-stone-200/50 shadow-sm p-2 hover:shadow-lg transition-all duration-300 cursor-pointer relative overflow-hidden group ${
+              bus.isSoon ? 'ring-1 ring-amber-400' : ''
             }`}
           >
             {/* Hover gradient */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl"></div>
 
-            {/* Minutes badge */}
-            <div className={`absolute top-1.5 right-1.5 flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-full ${
-              bus.isSoon 
-                ? 'text-amber-700 bg-amber-100' 
-                : 'text-stone-700 bg-stone-100'
-            }`}>
-              {bus.mins} min
-            </div>
-
-            <div className="relative flex flex-row items-center gap-2.5">
-              <div className={`w-14 h-14 flex-shrink-0 rounded-xl flex items-center justify-center text-xl font-semibold transition-transform duration-300 group-hover:scale-105 ${
-                bus.isSoon 
-                  ? 'bg-amber-600 text-white' 
-                  : 'bg-stone-900 text-white'
-              }`}>
-                {bus.line}
+            <div className="relative flex flex-row items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <div className={`w-10 h-10 flex-shrink-0 rounded-lg flex items-center justify-center text-lg font-semibold transition-transform duration-300 group-hover:scale-105 ${
+                  bus.isSoon 
+                    ? 'bg-amber-600 text-white' 
+                    : 'bg-stone-900 text-white'
+                }`}>
+                  {bus.line}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-[9px] uppercase tracking-wide text-stone-500 leading-none">
+                    {bus.stop}
+                  </div>
+                  <div className="text-xs font-medium text-stone-900 leading-tight mt-0.5">
+                    {bus.destination}
+                  </div>
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="text-[10px] uppercase tracking-wide text-stone-500 mb-0.5">
-                  {bus.stop}
-                </div>
-                <div className="text-sm font-medium text-stone-900 leading-tight">
-                  {bus.destination}
-                </div>
+              <div className={`flex-shrink-0 text-lg font-medium ${
+                bus.isSoon ? 'text-amber-700' : 'text-stone-900'
+              }`}>
+                {bus.mins}<span className="text-[10px] ml-0.5">min</span>
               </div>
             </div>
           </div>
