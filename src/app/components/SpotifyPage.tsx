@@ -119,7 +119,7 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
   const [queue, setQueue] = useState<{track: string; artist: string}[]>([]);
 
   // Long-press to lock/unlock (3 seconds)
-  const handleTouchStart = () => {
+  const handleTouchStart = (e: React.TouchEvent | React.MouseEvent) => {
     longPressTimer.current = setTimeout(() => {
       const newLockState = !locked;
       onLockChange?.(newLockState);
@@ -130,11 +130,15 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
     }, 3000);
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e: React.TouchEvent | React.MouseEvent) => {
     if (longPressTimer.current) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
+  };
+
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
   };
 
   // Extract colors when album art changes
@@ -299,9 +303,11 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
           }`}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
+          onTouchCancel={handleTouchEnd}
           onMouseDown={handleTouchStart}
           onMouseUp={handleTouchEnd}
           onMouseLeave={handleTouchEnd}
+          onContextMenu={handleContextMenu}
           animate={{
             boxShadow: isPlaying 
               ? `0 0 40px ${colors.primary}20, 0 0 80px ${colors.secondary}10`
