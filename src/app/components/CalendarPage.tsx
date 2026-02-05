@@ -1,51 +1,79 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 
+const API_BASE = '';
+
+interface CalendarEvent {
+  time: string;
+  title: string;
+  owner: string;
+  description?: string;
+}
+
+interface DayInfo {
+  date: number;
+  day: string;
+  fullDate: string;
+  events: CalendarEvent[];
+}
+
 export function CalendarPage() {
-  const [selectedDate, setSelectedDate] = useState(5);
+  const [days, setDays] = useState<DayInfo[]>([]);
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const [monthName, setMonthName] = useState('');
 
-  const events = {
-    5: [
-      { time: '10:00', title: 'Møte med teamet', owner: 'cornelius', description: 'Ukentlig statusmøte' },
-      { time: '14:00', title: 'Lege', owner: 'ida', description: 'Årlig kontroll' },
-      { time: '18:30', title: 'Middag', owner: 'ida', description: 'Lage pasta' },
-    ],
-    6: [
-      { time: '09:00', title: 'Frokostmøte', owner: 'cornelius', description: 'Med klienten' },
-      { time: '15:00', title: 'Yoga', owner: 'ida', description: 'Yoga i parken' },
-    ],
-    7: [
-      { time: '12:00', title: 'Lunsj med venner', owner: 'cornelius', description: 'På Restaurant Schrøder' },
-    ],
-  };
+  useEffect(() => {
+    async function fetchCalendar() {
+      try {
+        const res = await fetch(`${API_BASE}/events`);
+        const events = await res.json();
+        
+        // Generate 7 days starting from today
+        const today = new Date();
+        setMonthName(today.toLocaleDateString('no-NO', { month: 'long', year: 'numeric' }));
+        
+        const weekDays: DayInfo[] = [];
+        for (let i = 0; i < 7; i++) {
+          const d = new Date(today);
+          d.setDate(today.getDate() + i);
+          const dateStr = d.toISOString().split('T')[0];
+          
+          // Filter events for this day
+          const dayEvents = events
+            .filter((e: any) => {
+              const eventDate = new Date(e.start).toISOString().split('T')[0];
+              return eventDate === dateStr;
+            })
+            .map((e: any) => ({
+              time: new Date(e.start).toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' }),
+              title: e.oppsummering || e.title || 'Ingen tittel',
+              owner: e.organizer_email?.includes('ida') ? 'ida' : 'cornelius',
+              description: e.location || ''
+            }));
+          
+          weekDays.push({
+            date: d.getDate(),
+            day: d.toLocaleDateString('no-NO', { weekday: 'short' }),
+            fullDate: d.toLocaleDateString('no-NO', { weekday: 'long', day: 'numeric', month: 'long' }),
+            events: dayEvents
+          });
+        }
+        
+        setDays(weekDays);
+      } catch (e) {
+        console.error('Calendar error:', e);
+      }
+    }
+    
+    fetchCalendar();
+    const interval = setInterval(fetchCalendar, 300000);
+    return () => clearInterval(interval);
+  }, []);
 
-  const days = [
-    { date: 3, day: 'Man' },
-    { date: 4, day: 'Tirs' },
-    { date: 5, day: 'Ons' },
-    { date: 6, day: 'Tors' },
-    { date: 7, day: 'Fre' },
-    { date: 8, day: 'Lør' },
-    { date: 9, day: 'Søn' },
-  ];
+  const selectedDay = days[selectedIdx];
 
   return (
     <div className="h-full p-8 flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-4xl font-light text-stone-900 mb-2">Kalender</h1>
-          <p className="text-xl text-stone-600">Februar 2026</p>
-        </div>
-        <div className="flex items-center gap-4">
-          <button className="w-12 h-12 rounded-xl bg-white/40 backdrop-blur-sm border border-stone-200/50 hover:bg-white/60 transition-all flex items-center justify-center">
-            <ChevronLeft className="w-6 h-6 text-stone-600" />
-          </button>
-          <button className="w-12 h-12 rounded-xl bg-white/40 backdrop-blur-sm border border-stone-200/50 hover:bg-white/60 transition-all flex items-center justify-center">
-            <ChevronRight className="w-6 h-6 text-stone-600" />
-          </button>
-        </div>
-      </div>
 
       <div className="grid grid-cols-[auto_1fr] gap-6 flex-1">
         {/* Week View */}
@@ -54,12 +82,12 @@ export function CalendarPage() {
             Denne uken
           </h2>
           <div className="space-y-2">
-            {days.map((day) => (
+            {days.map((day, idx) => (
               <button
-                key={day.date}
-                onClick={() => setSelectedDate(day.date)}
+                key={idx}
+                onClick={() => setSelectedIdx(idx)}
                 className={`w-full p-4 rounded-xl transition-all duration-200 text-left ${
-                  selectedDate === day.date
+                  selectedIdx === idx
                     ? 'bg-stone-900 text-white shadow-md'
                     : 'hover:bg-white/60 text-stone-700'
                 }`}
@@ -68,13 +96,13 @@ export function CalendarPage() {
                   {day.day}
                 </div>
                 <div className="text-2xl font-light">{day.date}</div>
-                {events[day.date] && (
+                {day.events.length > 0 && (
                   <div className="mt-2 flex gap-1">
-                    {events[day.date].map((event, i) => (
+                    {day.events.slice(0, 4).map((event, i) => (
                       <span
                         key={i}
                         className={`w-1.5 h-1.5 rounded-full ${
-                          event.owner === 'ida' ? 'bg-amber-400' : selectedDate === day.date ? 'bg-white' : 'bg-stone-900'
+                          event.owner === 'ida' ? 'bg-amber-400' : selectedIdx === idx ? 'bg-white' : 'bg-stone-900'
                         }`}
                       ></span>
                     ))}
@@ -88,8 +116,8 @@ export function CalendarPage() {
         {/* Events for selected day */}
         <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-8 hover:shadow-lg transition-all duration-300 overflow-hidden">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-light text-stone-900">
-              {days.find(d => d.date === selectedDate)?.day} {selectedDate}. februar
+            <h2 className="text-2xl font-light text-stone-900 capitalize">
+              {selectedDay?.fullDate || '--'}
             </h2>
             <div className="flex gap-4">
               <span className="flex items-center gap-2 text-sm text-stone-600">
@@ -103,9 +131,9 @@ export function CalendarPage() {
             </div>
           </div>
 
-          {events[selectedDate] ? (
-            <div className="space-y-4">
-              {events[selectedDate].map((event, i) => (
+          {selectedDay?.events && selectedDay.events.length > 0 ? (
+            <div className="space-y-4 overflow-y-auto max-h-[400px]">
+              {selectedDay.events.map((event, i) => (
                 <div
                   key={i}
                   className={`p-6 rounded-2xl border-l-4 transition-all duration-200 hover:bg-white/60 cursor-pointer ${
@@ -123,9 +151,11 @@ export function CalendarPage() {
                         <div className="text-xl font-medium text-stone-900 mb-1">
                           {event.title}
                         </div>
-                        <div className="text-base text-stone-600">
-                          {event.description}
-                        </div>
+                        {event.description && (
+                          <div className="text-base text-stone-600">
+                            {event.description}
+                          </div>
+                        )}
                       </div>
                     </div>
                     <span className={`px-4 py-2 rounded-full text-sm ${

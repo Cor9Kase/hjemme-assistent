@@ -1,39 +1,96 @@
+import { useState, useEffect } from 'react';
 import { Wind, Droplets, Eye } from 'lucide-react';
 import { WeatherIcon } from './WeatherIcon';
 
+const API_BASE = '';
+
+const CONDITIONS: Record<string, string> = {
+  clearsky: 'Klarvær', fair: 'Lettskyet', partlycloudy: 'Delvis skyet',
+  cloudy: 'Overskyet', rain: 'Regn', lightrain: 'Lett regn',
+  heavyrain: 'Kraftig regn', snow: 'Snø', sleet: 'Sludd', fog: 'Tåke',
+  rainshowers: 'Regnbyger', snowshowers: 'Snøbyger', thunder: 'Torden'
+};
+
+interface WeatherData {
+  temp: number;
+  condition: string;
+  symbol: string;
+  wind: number;
+  humidity: number;
+  feelsLike: number;
+  hourly: { time: string; temp: number; symbol: string }[];
+  daily: { day: string; high: number; low: number; symbol: string }[];
+}
+
 export function WeatherPage() {
-  const weather = {
-    temp: 12,
-    condition: 'Delvis skyet',
-    symbol: 'partlycloudy_day',
-    wind: 3.2,
-    humidity: 65,
-    visibility: 10,
-    feelsLike: 11,
-    hourly: [
-      { time: '14:00', temp: 13, symbol: 'partlycloudy_day' },
-      { time: '15:00', temp: 14, symbol: 'fair_day' },
-      { time: '16:00', temp: 13, symbol: 'fair_day' },
-      { time: '17:00', temp: 12, symbol: 'cloudy' },
-      { time: '18:00', temp: 11, symbol: 'cloudy' },
-      { time: '19:00', temp: 10, symbol: 'partlycloudy_night' },
-    ],
-    daily: [
-      { day: 'I dag', high: 14, low: 9, symbol: 'partlycloudy_day' },
-      { day: 'Fredag', high: 13, low: 8, symbol: 'rain' },
-      { day: 'Lørdag', high: 15, low: 10, symbol: 'fair_day' },
-      { day: 'Søndag', high: 16, low: 11, symbol: 'fair_day' },
-    ]
-  };
+  const [weather, setWeather] = useState<WeatherData>({
+    temp: 0, condition: '--', symbol: 'cloudy', wind: 0, humidity: 0, feelsLike: 0,
+    hourly: [], daily: []
+  });
+
+  useEffect(() => {
+    async function fetchWeather() {
+      try {
+        const res = await fetch(`${API_BASE}/weather`);
+        const data = await res.json();
+        const timeseries = data.properties?.timeseries || [];
+        
+        if (timeseries.length === 0) return;
+        
+        const current = timeseries[0];
+        const temp = Math.round(current.data.instant.details.air_temperature);
+        const symbol = current.data.next_1_hours?.summary?.symbol_code || 'cloudy';
+        const baseSymbol = symbol.split('_')[0];
+        
+        // Hourly forecast
+        const hourly = timeseries.slice(1, 7).map((item: any) => ({
+          time: new Date(item.time).toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' }),
+          temp: Math.round(item.data.instant.details.air_temperature),
+          symbol: item.data.next_1_hours?.summary?.symbol_code || 'cloudy'
+        }));
+        
+        // Daily forecast
+        const dailyData: Record<string, { temps: number[]; symbols: string[] }> = {};
+        timeseries.forEach((item: any) => {
+          const date = item.time.split('T')[0];
+          if (!dailyData[date]) dailyData[date] = { temps: [], symbols: [] };
+          dailyData[date].temps.push(item.data.instant.details.air_temperature);
+          const sym = (item.data.next_1_hours || item.data.next_6_hours)?.summary?.symbol_code;
+          if (sym) dailyData[date].symbols.push(sym);
+        });
+        
+        const days = Object.entries(dailyData).slice(0, 4).map(([date, info], i) => {
+          const dayName = i === 0 ? 'I dag' : new Date(date).toLocaleDateString('no-NO', { weekday: 'long' });
+          return {
+            day: dayName.charAt(0).toUpperCase() + dayName.slice(1),
+            high: Math.round(Math.max(...info.temps)),
+            low: Math.round(Math.min(...info.temps)),
+            symbol: info.symbols[Math.floor(info.symbols.length / 2)] || 'cloudy'
+          };
+        });
+        
+        setWeather({
+          temp,
+          condition: CONDITIONS[baseSymbol] || baseSymbol,
+          symbol,
+          wind: current.data.instant.details.wind_speed,
+          humidity: Math.round(current.data.instant.details.relative_humidity),
+          feelsLike: Math.round(temp - current.data.instant.details.wind_speed * 0.5),
+          hourly,
+          daily: days
+        });
+      } catch (e) {
+        console.error('Weather fetch error:', e);
+      }
+    }
+    
+    fetchWeather();
+    const interval = setInterval(fetchWeather, 600000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="h-full p-8 flex flex-col">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-light text-stone-900 mb-2">Værmelding</h1>
-        <p className="text-xl text-stone-600">Oslo, Norge</p>
-      </div>
-
       {/* Current Weather Hero */}
       <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-10 mb-6 group hover:shadow-lg transition-all duration-300">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>

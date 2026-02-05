@@ -1,115 +1,289 @@
-import { useState, useEffect } from 'react';
-import { Play, Pause, SkipBack, SkipForward, Volume2, Heart } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Play, Pause, SkipBack, SkipForward, Volume2, Heart, Music, Lock, Unlock } from 'lucide-react';
 import { motion } from 'motion/react';
-import { ImageWithFallback } from './figma/ImageWithFallback';
 
-export function SpotifyPage() {
-  const [isPlaying, setIsPlaying] = useState(true);
+const API_BASE = '';
+
+interface TrackInfo {
+  track: string;
+  artist: string;
+  album: string;
+  albumArt: string;
+  duration: string;
+  currentTime: string;
+  progress: number;
+  isPlaying: boolean;
+}
+
+interface ExtractedColors {
+  primary: string;
+  secondary: string;
+  accent: string;
+}
+
+// Extract dominant colors from an image using canvas
+function extractColors(imageUrl: string): Promise<ExtractedColors> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'Anonymous';
+    
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        resolve({ primary: '#8B5CF6', secondary: '#EC4899', accent: '#F59E0B' });
+        return;
+      }
+      
+      // Sample at smaller size for performance
+      const size = 50;
+      canvas.width = size;
+      canvas.height = size;
+      ctx.drawImage(img, 0, 0, size, size);
+      
+      const imageData = ctx.getImageData(0, 0, size, size).data;
+      const colorBuckets: Map<string, { r: number; g: number; b: number; count: number }> = new Map();
+      
+      // Sample pixels and bucket by color similarity
+      for (let i = 0; i < imageData.length; i += 4) {
+        const r = Math.floor(imageData[i] / 32) * 32;
+        const g = Math.floor(imageData[i + 1] / 32) * 32;
+        const b = Math.floor(imageData[i + 2] / 32) * 32;
+        
+        // Skip very dark or very light colors
+        const brightness = (r + g + b) / 3;
+        if (brightness < 30 || brightness > 230) continue;
+        
+        const key = `${r},${g},${b}`;
+        const existing = colorBuckets.get(key);
+        if (existing) {
+          existing.count++;
+        } else {
+          colorBuckets.set(key, { r, g, b, count: 1 });
+        }
+      }
+      
+      // Sort by count and get top colors
+      const sorted = Array.from(colorBuckets.values())
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+      
+      if (sorted.length === 0) {
+        resolve({ primary: '#8B5CF6', secondary: '#EC4899', accent: '#F59E0B' });
+        return;
+      }
+      
+      // Pick colors with good contrast
+      const toHex = (c: { r: number; g: number; b: number }) => 
+        `#${c.r.toString(16).padStart(2, '0')}${c.g.toString(16).padStart(2, '0')}${c.b.toString(16).padStart(2, '0')}`;
+      
+      const primary = sorted[0];
+      const secondary = sorted[1] || sorted[0];
+      const accent = sorted[2] || sorted[1] || sorted[0];
+      
+      resolve({
+        primary: toHex(primary),
+        secondary: toHex(secondary),
+        accent: toHex(accent)
+      });
+    };
+    
+    img.onerror = () => {
+      resolve({ primary: '#8B5CF6', secondary: '#EC4899', accent: '#F59E0B' });
+    };
+    
+    img.src = imageUrl;
+  });
+}
+
+interface SpotifyPageProps {
+  locked?: boolean;
+  onLockChange?: (locked: boolean) => void;
+}
+
+export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) {
+  const [nowPlaying, setNowPlaying] = useState<TrackInfo | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
   const [liked, setLiked] = useState(false);
-  const [progress, setProgress] = useState(45);
   const [colorPhase, setColorPhase] = useState(0);
+  const [isConnected, setIsConnected] = useState(false);
+  const [colors, setColors] = useState<ExtractedColors>({
+    primary: '#8B5CF6',
+    secondary: '#EC4899',
+    accent: '#F59E0B',
+  });
+  const lastAlbumArt = useRef<string>('');
 
-  const nowPlaying = {
-    track: 'Northern Lights',
-    artist: 'Aurora',
-    album: 'All My Demons Greeting Me As A Friend',
-    albumArt: 'https://images.unsplash.com/photo-1616663395403-2e0052b8e595?crop=entropy&cs=tinysrgb&fit=max&fm=jpg&ixid=M3w3Nzg4Nzd8MHwxfHNlYXJjaHwxfHx2aW55bCUyMHJlY29yZCUyMGFsYnVtfGVufDF8fHx8MTc3MDIyMzk2OHww&ixlib=rb-4.1.0&q=80&w=1080',
-    duration: '3:42',
-    currentTime: '1:40',
-    // Color theme for this track
-    colors: {
-      primary: '#8B5CF6',    // Purple
-      secondary: '#EC4899',  // Pink
-      accent: '#F59E0B',     // Amber
+  const [queue, setQueue] = useState<{track: string; artist: string}[]>([]);
+
+  // Extract colors when album art changes
+  useEffect(() => {
+    if (nowPlaying?.albumArt && nowPlaying.albumArt !== lastAlbumArt.current) {
+      lastAlbumArt.current = nowPlaying.albumArt;
+      extractColors(nowPlaying.albumArt).then(setColors);
     }
-  };
+  }, [nowPlaying?.albumArt]);
 
-  const queue = [
-    { track: 'Runaway', artist: 'Aurora', duration: '5:10' },
-    { track: 'The River', artist: 'Aurora', duration: '4:12' },
-    { track: 'Running With The Wolves', artist: 'Aurora', duration: '3:14' },
-  ];
+  useEffect(() => {
+    async function fetchNowPlaying() {
+      try {
+        const res = await fetch(`${API_BASE}/spotify/now-playing`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.item) {
+            const durationMs = data.item.duration_ms || 0;
+            const progressMs = data.progress_ms || 0;
+            
+            setNowPlaying({
+              track: data.item.name,
+              artist: data.item.artists?.map((a: any) => a.name).join(', ') || '',
+              album: data.item.album?.name || '',
+              albumArt: data.item.album?.images?.[0]?.url || '',
+              duration: formatTime(durationMs),
+              currentTime: formatTime(progressMs),
+              progress: durationMs > 0 ? (progressMs / durationMs) * 100 : 0,
+              isPlaying: data.is_playing
+            });
+            setIsPlaying(data.is_playing);
+            setIsConnected(true);
+          } else {
+            setIsConnected(true);
+            setNowPlaying(null);
+          }
+        }
+      } catch (e) {
+        console.error('Spotify error:', e);
+        setIsConnected(false);
+      }
+    }
+    
+    async function fetchQueue() {
+      try {
+        const res = await fetch(`${API_BASE}/spotify/queue`);
+        if (res.ok) {
+          const data = await res.json();
+          const queueItems = (data.queue || []).slice(0, 3).map((item: any) => ({
+            track: item.name,
+            artist: item.artists?.map((a: any) => a.name).join(', ') || ''
+          }));
+          setQueue(queueItems);
+        }
+      } catch (e) {
+        console.error('Queue error:', e);
+      }
+    }
+    
+    fetchNowPlaying();
+    fetchQueue();
+    const interval = setInterval(() => {
+      fetchNowPlaying();
+      fetchQueue();
+    }, 5000);
+    return () => clearInterval(interval);
+  }, []);
 
-  // Animate colors when playing
+  function formatTime(ms: number): string {
+    const mins = Math.floor(ms / 60000);
+    const secs = Math.floor((ms % 60000) / 1000);
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  }
+
+  async function handlePlayPause() {
+    try {
+      await fetch(`${API_BASE}/spotify/${isPlaying ? 'pause' : 'play'}`, { method: 'POST' });
+      setIsPlaying(!isPlaying);
+    } catch (e) { console.error('Play/pause error:', e); }
+  }
+
+  async function handleNext() {
+    try { await fetch(`${API_BASE}/spotify/next`, { method: 'POST' }); } 
+    catch (e) { console.error('Next error:', e); }
+  }
+
+  async function handlePrev() {
+    try { await fetch(`${API_BASE}/spotify/previous`, { method: 'POST' }); } 
+    catch (e) { console.error('Prev error:', e); }
+  }
+
   useEffect(() => {
     if (!isPlaying) return;
-    
-    const interval = setInterval(() => {
-      setColorPhase((prev) => (prev + 1) % 3);
-    }, 2000);
-
+    const interval = setInterval(() => setColorPhase((prev) => (prev + 1) % 3), 2000);
     return () => clearInterval(interval);
   }, [isPlaying]);
 
-  // Get current gradient based on phase
   const getGradient = () => {
-    const { primary, secondary, accent } = nowPlaying.colors;
-    
+    const { primary, secondary, accent } = colors;
     switch (colorPhase) {
-      case 0:
-        return `linear-gradient(135deg, ${primary}15, ${secondary}10)`;
-      case 1:
-        return `linear-gradient(135deg, ${secondary}15, ${accent}10)`;
-      case 2:
-        return `linear-gradient(135deg, ${accent}15, ${primary}10)`;
-      default:
-        return `linear-gradient(135deg, ${primary}15, ${secondary}10)`;
+      case 0: return `linear-gradient(135deg, ${primary}50, ${secondary}30)`;
+      case 1: return `linear-gradient(135deg, ${secondary}50, ${accent}30)`;
+      case 2: return `linear-gradient(135deg, ${accent}50, ${primary}30)`;
+      default: return `linear-gradient(135deg, ${primary}50, ${secondary}30)`;
     }
   };
+
+  if (!isConnected) {
+    return (
+      <div className="h-full p-8 flex flex-col items-center justify-center">
+        <Music className="w-24 h-24 text-stone-400 mb-6" />
+        <h2 className="text-2xl text-stone-600 mb-4">Spotify ikke tilkoblet</h2>
+        <a href="/spotify/login" className="px-8 py-4 bg-stone-900 text-white rounded-2xl hover:bg-stone-800 transition-colors">
+          Koble til Spotify
+        </a>
+      </div>
+    );
+  }
+
+  if (!nowPlaying) {
+    return (
+      <div className="h-full p-8 flex flex-col items-center justify-center">
+        <Music className="w-24 h-24 text-stone-400 mb-6" />
+        <h2 className="text-2xl text-stone-600">Ingenting spiller</h2>
+        <p className="text-stone-500 mt-2">Start avspilling fra Spotify-appen</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full p-8 flex flex-col relative overflow-hidden">
       {/* Animated color background */}
       <motion.div 
         className="absolute inset-0 -z-10"
-        animate={{
-          background: getGradient(),
-        }}
-        transition={{
-          duration: 2,
-          ease: "easeInOut"
-        }}
+        animate={{ background: getGradient() }}
+        transition={{ duration: 2, ease: "easeInOut" }}
       />
 
       {/* Pulsing orbs */}
       {isPlaying && (
         <>
           <motion.div
-            className="absolute w-96 h-96 rounded-full blur-3xl opacity-20"
-            style={{ background: nowPlaying.colors.primary }}
-            animate={{
-              scale: [1, 1.2, 1],
-              x: [100, 150, 100],
-              y: [100, 150, 100],
-            }}
-            transition={{
-              duration: 4,
-              repeat: Infinity,
-              ease: "easeInOut"
-            }}
+            className="absolute w-96 h-96 rounded-full blur-3xl opacity-40"
+            style={{ background: colors.primary }}
+            animate={{ scale: [1, 1.2, 1], x: [100, 150, 100], y: [100, 150, 100] }}
+            transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
           />
           <motion.div
-            className="absolute w-96 h-96 rounded-full blur-3xl opacity-20"
-            style={{ background: nowPlaying.colors.secondary }}
-            animate={{
-              scale: [1.2, 1, 1.2],
-              x: [800, 750, 800],
-              y: [400, 350, 400],
-            }}
-            transition={{
-              duration: 5,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: 1
-            }}
+            className="absolute w-96 h-96 rounded-full blur-3xl opacity-40"
+            style={{ background: colors.secondary }}
+            animate={{ scale: [1.2, 1, 1.2], x: [800, 750, 800], y: [400, 350, 400] }}
+            transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
           />
         </>
       )}
 
       {/* Header */}
-      <div className="mb-8 relative z-10">
-        <h1 className="text-4xl font-light text-stone-900 mb-2">Spiller nå</h1>
-        <p className="text-xl text-stone-600">Spotify</p>
+      <div className="mb-8 relative z-10 flex items-start justify-end">
+        {/* Lock button */}
+        <button
+          onClick={() => onLockChange?.(!locked)}
+          className={`p-3 rounded-xl transition-all ${
+            locked 
+              ? 'bg-amber-100 text-amber-700' 
+              : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
+          }`}
+          title={locked ? 'Lås opp (går tilbake automatisk)' : 'Lås (bli på denne siden)'}
+        >
+          {locked ? <Lock className="w-6 h-6" /> : <Unlock className="w-6 h-6" />}
+        </button>
       </div>
 
       <div className="grid grid-cols-[1.2fr_1fr] gap-6 flex-1 relative z-10">
@@ -118,83 +292,50 @@ export function SpotifyPage() {
           className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-10 hover:shadow-lg transition-all duration-300 flex flex-col"
           animate={{
             boxShadow: isPlaying 
-              ? `0 0 40px ${nowPlaying.colors.primary}20, 0 0 80px ${nowPlaying.colors.secondary}10`
+              ? `0 0 40px ${colors.primary}20, 0 0 80px ${colors.secondary}10`
               : '0 1px 3px rgba(0, 0, 0, 0.1)'
           }}
           transition={{ duration: 2 }}
         >
-          
-          {/* Vinyl Record */}
+          {/* Album Cover */}
           <div className="flex items-center justify-center mb-8">
-            <div className="relative">
-              {/* Vinyl */}
-              <div
-                className={`w-64 h-64 rounded-full bg-gradient-to-br from-stone-800 via-stone-700 to-stone-800 relative shadow-2xl transition-transform duration-300 ${
-                  isPlaying ? 'animate-spin-slow' : ''
-                }`}
-                style={{ animationDuration: '4s' }}
-              >
-                {/* Grooves */}
-                <div className="absolute inset-1 rounded-full opacity-10 bg-[repeating-radial-gradient(circle_at_center,transparent_0px,transparent_2px,white_2px,white_3px)]"></div>
-                
-                {/* Center label with album art */}
-                <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-24 h-24 rounded-full bg-stone-200 overflow-hidden shadow-lg">
-                  <ImageWithFallback 
-                    src={nowPlaying.albumArt} 
-                    alt={nowPlaying.album}
-                    className="w-full h-full object-cover"
-                  />
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-2 h-2 rounded-full bg-stone-900"></div>
+            <div className="w-64 h-64 rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+              {nowPlaying.albumArt ? (
+                <img src={nowPlaying.albumArt} alt={nowPlaying.album} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center bg-stone-300">
+                  <Music className="w-16 h-16 text-stone-500" />
                 </div>
-              </div>
+              )}
             </div>
           </div>
 
           {/* Track Info */}
           <div className="text-center mb-6">
-            <h2 className="text-3xl font-medium text-stone-900 mb-2">
-              {nowPlaying.track}
-            </h2>
+            <h2 className="text-3xl font-medium text-stone-900 mb-2">{nowPlaying.track}</h2>
             <p className="text-xl text-stone-600">{nowPlaying.artist}</p>
             <p className="text-sm text-stone-500 mt-2">{nowPlaying.album}</p>
           </div>
 
-          {/* Progress Bar */}
+          {/* Progress Bar (no timestamps) */}
           <div className="mb-6">
             <div className="w-full h-2 bg-stone-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-stone-900 transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-            <div className="flex justify-between mt-2 text-sm text-stone-500">
-              <span>{nowPlaying.currentTime}</span>
-              <span>{nowPlaying.duration}</span>
+              <div className="h-full bg-stone-900 transition-all duration-300" style={{ width: `${nowPlaying.progress}%` }}></div>
             </div>
           </div>
 
           {/* Controls */}
           <div className="flex items-center justify-center gap-6">
-            <button 
-              onClick={() => setLiked(!liked)}
-              className="w-14 h-14 rounded-full hover:bg-stone-100 active:scale-95 transition-all flex items-center justify-center"
-            >
+            <button onClick={() => setLiked(!liked)} className="w-14 h-14 rounded-full hover:bg-stone-100 active:scale-95 transition-all flex items-center justify-center">
               <Heart className={`w-6 h-6 ${liked ? 'fill-amber-600 text-amber-600' : 'text-stone-600'}`} />
             </button>
-            <button className="w-14 h-14 rounded-full hover:bg-stone-100 active:scale-95 transition-all flex items-center justify-center">
+            <button onClick={handlePrev} className="w-14 h-14 rounded-full hover:bg-stone-100 active:scale-95 transition-all flex items-center justify-center">
               <SkipBack className="w-7 h-7 text-stone-900 fill-stone-900" />
             </button>
-            <button
-              onClick={() => setIsPlaying(!isPlaying)}
-              className="w-20 h-20 rounded-full bg-stone-900 hover:bg-stone-800 active:scale-95 transition-all flex items-center justify-center shadow-lg"
-            >
-              {isPlaying ? (
-                <Pause className="w-10 h-10 fill-white text-white" />
-              ) : (
-                <Play className="w-10 h-10 fill-white text-white ml-1" />
-              )}
+            <button onClick={handlePlayPause} className="w-20 h-20 rounded-full bg-stone-900 hover:bg-stone-800 active:scale-95 transition-all flex items-center justify-center shadow-lg">
+              {isPlaying ? <Pause className="w-10 h-10 fill-white text-white" /> : <Play className="w-10 h-10 fill-white text-white ml-1" />}
             </button>
-            <button className="w-14 h-14 rounded-full hover:bg-stone-100 active:scale-95 transition-all flex items-center justify-center">
+            <button onClick={handleNext} className="w-14 h-14 rounded-full hover:bg-stone-100 active:scale-95 transition-all flex items-center justify-center">
               <SkipForward className="w-7 h-7 text-stone-900 fill-stone-900" />
             </button>
             <button className="w-14 h-14 rounded-full hover:bg-stone-100 active:scale-95 transition-all flex items-center justify-center">
@@ -208,47 +349,32 @@ export function SpotifyPage() {
           <h2 className="text-sm uppercase tracking-wider text-stone-600 font-medium mb-6">
             Neste i køen
           </h2>
-          <div className="space-y-4">
-            {queue.map((song, i) => (
-              <div
-                key={i}
-                className="p-4 rounded-2xl hover:bg-white/60 transition-all cursor-pointer group"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-stone-200 flex items-center justify-center text-stone-600 font-medium group-hover:bg-stone-900 group-hover:text-white transition-colors">
-                    {i + 1}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-lg font-medium text-stone-900 truncate">
-                      {song.track}
+          {queue.length > 0 ? (
+            <div className="space-y-4">
+              {queue.map((song, i) => (
+                <div key={i} className="p-4 rounded-2xl hover:bg-white/60 transition-all cursor-pointer group">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-stone-200 flex items-center justify-center text-stone-600 font-medium group-hover:bg-stone-900 group-hover:text-white transition-colors">
+                      {i + 1}
                     </div>
-                    <div className="text-sm text-stone-600 truncate">
-                      {song.artist}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-lg font-medium text-stone-900 truncate">{song.track}</div>
+                      <div className="text-sm text-stone-600 truncate">{song.artist}</div>
                     </div>
                   </div>
-                  <span className="text-sm text-stone-500">{song.duration}</span>
                 </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Add more button */}
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-stone-500">
+              Ingen sanger i køen
+            </div>
+          )}
           <button className="w-full mt-6 py-4 rounded-2xl border-2 border-dashed border-stone-300 text-stone-600 hover:border-stone-400 hover:bg-white/40 transition-all text-sm uppercase tracking-wider font-medium">
             Se hele køen
           </button>
         </div>
       </div>
-
-      {/* Custom animations */}
-      <style>{`
-        @keyframes spin-slow {
-          from { transform: rotate(0deg); }
-          to { transform: rotate(360deg); }
-        }
-        .animate-spin-slow {
-          animation: spin-slow 4s linear infinite;
-        }
-      `}</style>
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useRef } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import { Pagination, EffectCreative } from 'swiper/modules';
 import type { Swiper as SwiperType } from 'swiper';
@@ -12,8 +12,52 @@ import { CalendarPage } from './components/CalendarPage';
 import { BusPage } from './components/BusPage';
 import { SpotifyPage } from './components/SpotifyPage';
 
+const IDLE_TIMEOUT = 30000; // 30 seconds
+const SPOTIFY_SLIDE_INDEX = 4;
+
 export default function App() {
   const swiperRef = useRef<SwiperType | null>(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [spotifyLocked, setSpotifyLocked] = useState(false);
+  const idleTimerRef = useRef<number | null>(null);
+
+  const resetIdleTimer = useCallback(() => {
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+    }
+    idleTimerRef.current = window.setTimeout(() => {
+      // Don't auto-navigate if on Spotify and locked
+      if (currentSlide === SPOTIFY_SLIDE_INDEX && spotifyLocked) {
+        return;
+      }
+      // Return to overview
+      if (currentSlide !== 0) {
+        swiperRef.current?.slideTo(0);
+      }
+    }, IDLE_TIMEOUT);
+  }, [currentSlide, spotifyLocked]);
+
+  // Set up idle detection
+  useEffect(() => {
+    const events = ['touchstart', 'touchmove', 'click', 'mousemove', 'keydown'];
+    
+    const handleActivity = () => resetIdleTimer();
+    
+    events.forEach(event => {
+      window.addEventListener(event, handleActivity, { passive: true });
+    });
+    
+    resetIdleTimer();
+    
+    return () => {
+      events.forEach(event => {
+        window.removeEventListener(event, handleActivity);
+      });
+      if (idleTimerRef.current) {
+        clearTimeout(idleTimerRef.current);
+      }
+    };
+  }, [resetIdleTimer]);
 
   return (
     <div className="w-[1280px] h-[720px] bg-gradient-to-br from-stone-50 via-amber-50/30 to-stone-50 overflow-hidden">
@@ -47,6 +91,9 @@ export default function App() {
         onSwiper={(swiper) => {
           swiperRef.current = swiper;
         }}
+        onSlideChange={(swiper) => {
+          setCurrentSlide(swiper.activeIndex);
+        }}
       >
         <SwiperSlide>
           <OverviewPage onNavigate={(index) => swiperRef.current?.slideTo(index)} />
@@ -61,7 +108,7 @@ export default function App() {
           <BusPage />
         </SwiperSlide>
         <SwiperSlide>
-          <SpotifyPage />
+          <SpotifyPage locked={spotifyLocked} onLockChange={setSpotifyLocked} />
         </SwiperSlide>
       </Swiper>
 

@@ -1,70 +1,107 @@
-import { MapPin, Clock } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { MapPin } from 'lucide-react';
+
+const STOPS = [
+  { id: 'NSR:StopPlace:6372', name: 'Adv. Dehlis plass', short: 'Adv. Dehlis pl.' },
+  { id: 'NSR:StopPlace:6366', name: 'Voldsløkka', short: 'Voldsløkka' }
+];
+
+interface BusDeparture {
+  line: string;
+  destination: string;
+  time: string;
+  mins: number;
+  isSoon: boolean;
+  stop: string;
+  realTime: boolean;
+}
 
 export function BusPage() {
-  const departures = [
-    { 
-      line: '54', 
-      destination: 'Kværnerbyen', 
-      time: '3 min', 
-      isSoon: true,
-      platform: 'A',
-      realTime: true
-    },
-    { 
-      line: '37', 
-      destination: 'Helsfyr', 
-      time: '8 min', 
-      isSoon: false,
-      platform: 'B',
-      realTime: true
-    },
-    { 
-      line: '34', 
-      destination: 'Ekeberg hageby', 
-      time: '12 min', 
-      isSoon: false,
-      platform: 'A',
-      realTime: true
-    },
-    { 
-      line: '54', 
-      destination: 'Kværnerbyen', 
-      time: '18 min', 
-      isSoon: false,
-      platform: 'A',
-      realTime: false
-    },
-    { 
-      line: '37', 
-      destination: 'Helsfyr', 
-      time: '23 min', 
-      isSoon: false,
-      platform: 'B',
-      realTime: false
-    },
-    { 
-      line: '34', 
-      destination: 'Ekeberg hageby', 
-      time: '27 min', 
-      isSoon: false,
-      platform: 'A',
-      realTime: true
-    },
-  ];
+  const [departures, setDepartures] = useState<BusDeparture[]>([]);
+
+  useEffect(() => {
+    async function fetchBus() {
+      const stopQueries = STOPS.map((s, i) => `
+        stop${i}: stopPlace(id: "${s.id}") {
+          name
+          estimatedCalls(timeRange: 7200, numberOfDepartures: 10) {
+            expectedDepartureTime
+            destinationDisplay { frontText }
+            serviceJourney { journeyPattern { line { publicCode } } }
+          }
+        }
+      `).join('');
+      
+      const query = `{ ${stopQueries} }`;
+      
+      try {
+        const res = await fetch('https://api.entur.io/journey-planner/v3/graphql', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'ET-Client-Name': 'hjemme-dashboard' },
+          body: JSON.stringify({ query })
+        });
+        const data = await res.json();
+        
+        let allDepartures: any[] = [];
+        STOPS.forEach((s, i) => {
+          const stopData = data.data?.[`stop${i}`];
+          if (stopData?.estimatedCalls) {
+            stopData.estimatedCalls.forEach((d: any) => {
+              d.stopName = stopData.name;
+              d.stopShort = s.short;
+              allDepartures.push(d);
+            });
+          }
+        });
+        
+        // Filter relevant lines
+        const filtered = allDepartures.filter((d: any) => {
+          const line = d.serviceJourney.journeyPattern.line.publicCode;
+          const dest = d.destinationDisplay.frontText;
+          return (line === '54' && dest === 'Kværnerbyen') || 
+                 (line === '37' && dest === 'Helsfyr') ||
+                 (line === '34' && dest === 'Ekeberg hageby');
+        });
+        
+        // Sort by time
+        filtered.sort((a: any, b: any) => 
+          new Date(a.expectedDepartureTime).getTime() - new Date(b.expectedDepartureTime).getTime()
+        );
+        
+        // Filter out buses departing in less than 3 minutes
+        const validBuses = filtered.filter((bus: any) => {
+          const mins = Math.round((new Date(bus.expectedDepartureTime).getTime() - Date.now()) / 60000);
+          return mins >= 3;
+        });
+        
+        const deps = validBuses.slice(0, 6).map((bus: any) => {
+          const mins = Math.round((new Date(bus.expectedDepartureTime).getTime() - Date.now()) / 60000);
+          return {
+            line: bus.serviceJourney.journeyPattern.line.publicCode,
+            destination: bus.destinationDisplay.frontText,
+            time: `${mins} min`,
+            mins,
+            isSoon: mins <= 5,
+            stop: bus.stopShort,
+            realTime: true
+          };
+        });
+        
+        setDepartures(deps);
+      } catch (e) {
+        console.error('Bus error:', e);
+      }
+    }
+    
+    fetchBus();
+    const interval = setInterval(fetchBus, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div className="h-full p-8 flex flex-col">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-light text-stone-900 mb-2">Bussholdeplass</h1>
-        <div className="flex items-center gap-2 text-xl text-stone-600">
-          <MapPin className="w-5 h-5" />
-          <span>Oslo Sentrum</span>
-        </div>
-      </div>
-
       {/* Departures Grid */}
-      <div className="grid grid-cols-2 gap-6 flex-1">
+      <div className="grid grid-cols-2 gap-6 flex-1 overflow-y-auto">
         {departures.map((bus, i) => (
           <div
             key={i}
@@ -75,13 +112,14 @@ export function BusPage() {
             {/* Hover gradient */}
             <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
 
-            {/* Real-time indicator */}
-            {bus.realTime && (
-              <div className="absolute top-6 right-6 flex items-center gap-2 text-xs text-green-700 bg-green-100 px-3 py-1.5 rounded-full">
-                <div className="w-2 h-2 rounded-full bg-green-600 animate-pulse"></div>
-                Sanntid
-              </div>
-            )}
+            {/* Minutes badge */}
+            <div className={`absolute top-6 right-6 flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-full ${
+              bus.isSoon 
+                ? 'text-amber-700 bg-amber-100' 
+                : 'text-stone-700 bg-stone-100'
+            }`}>
+              {bus.mins} min
+            </div>
 
             <div className="relative flex items-center gap-6 mb-6">
               <div className={`w-20 h-20 rounded-2xl flex items-center justify-center text-3xl font-semibold transition-transform duration-300 group-hover:scale-105 ${
@@ -93,23 +131,11 @@ export function BusPage() {
               </div>
               <div className="flex-1">
                 <div className="text-xs uppercase tracking-wider text-stone-500 mb-1">
-                  Plattform {bus.platform}
+                  {bus.stop}
                 </div>
                 <div className="text-xl font-medium text-stone-900 leading-tight">
                   {bus.destination}
                 </div>
-              </div>
-            </div>
-
-            <div className="relative flex items-center justify-between pt-6 border-t border-stone-200">
-              <div className="flex items-center gap-2 text-stone-500">
-                <Clock className="w-5 h-5" />
-                <span className="text-sm">Avgår om</span>
-              </div>
-              <div className={`text-4xl font-light ${
-                bus.isSoon ? 'text-amber-600' : 'text-stone-900'
-              }`}>
-                {bus.time}
               </div>
             </div>
           </div>
@@ -120,11 +146,7 @@ export function BusPage() {
       <div className="mt-6 flex items-center justify-center gap-8 text-sm text-stone-500">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-          <span>Avgår snart</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-green-600"></div>
-          <span>Sanntidsdata</span>
+          <span>Avgår innen 5 min</span>
         </div>
       </div>
     </div>
