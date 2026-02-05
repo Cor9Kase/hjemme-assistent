@@ -269,7 +269,7 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
   }
 
   return (
-    <div className="h-full p-5 pb-10 flex flex-col relative overflow-hidden">
+    <div className="h-full p-5 pb-10 pt-16 flex flex-col relative overflow-hidden">
       {/* Animated color background */}
       <motion.div 
         className="absolute inset-0 -z-10"
