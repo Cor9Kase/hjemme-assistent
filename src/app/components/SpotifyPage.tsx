@@ -113,21 +113,28 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
     accent: '#F59E0B',
   });
   const lastAlbumArt = useRef<string>('');
-  const lastTap = useRef<number>(0);
+  const longPressTimer = useRef<NodeJS.Timeout | null>(null);
+  const [showLockMessage, setShowLockMessage] = useState(false);
 
   const [queue, setQueue] = useState<{track: string; artist: string}[]>([]);
 
-  // Double-tap to lock/unlock
-  const handleDoubleTap = () => {
-    const now = Date.now();
-    const timeSinceLastTap = now - lastTap.current;
-    
-    if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
-      // Double tap detected
-      onLockChange?.(!locked);
+  // Long-press to lock/unlock (3 seconds)
+  const handleTouchStart = () => {
+    longPressTimer.current = setTimeout(() => {
+      const newLockState = !locked;
+      onLockChange?.(newLockState);
+      
+      // Show confirmation message
+      setShowLockMessage(true);
+      setTimeout(() => setShowLockMessage(false), 2000);
+    }, 3000);
+  };
+
+  const handleTouchEnd = () => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
     }
-    
-    lastTap.current = now;
   };
 
   // Extract colors when album art changes
@@ -290,7 +297,11 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
           className={`bg-white/40 backdrop-blur-sm rounded-3xl border shadow-sm p-6 hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer relative ${
             locked ? 'border-amber-400 border-2' : 'border-stone-200/50'
           }`}
-          onClick={handleDoubleTap}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          onMouseDown={handleTouchStart}
+          onMouseUp={handleTouchEnd}
+          onMouseLeave={handleTouchEnd}
           animate={{
             boxShadow: isPlaying 
               ? `0 0 40px ${colors.primary}20, 0 0 80px ${colors.secondary}10`
@@ -298,6 +309,21 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
           }}
           transition={{ duration: 2 }}
         >
+          {/* Lock confirmation message */}
+          {showLockMessage && (
+            <motion.div 
+              className="absolute inset-0 bg-stone-900/90 rounded-3xl flex items-center justify-center z-20"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+            >
+              <div className="text-center">
+                <Lock className="w-12 h-12 text-amber-400 mx-auto mb-3" />
+                <p className="text-white text-xl font-medium">{locked ? 'Vindu låst' : 'Vindu låst opp'}</p>
+              </div>
+            </motion.div>
+          )}
+          
           {/* Lock indicator */}
           {locked && (
             <div className="absolute top-3 right-3 bg-amber-100 text-amber-700 p-2 rounded-full z-10">
