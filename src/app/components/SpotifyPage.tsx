@@ -297,8 +297,9 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
 
       <div className="flex gap-6 flex-1 relative z-10 items-start justify-center">
         {/* Now Playing */}
+        {/* Now Playing */}
         <motion.div 
-          className={`bg-white/40 backdrop-blur-sm rounded-3xl border shadow-sm p-6 hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer relative max-w-md ${
+          className={`bg-white/40 backdrop-blur-sm rounded-xl border shadow-sm p-5 hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer relative max-w-lg ${
             locked ? 'border-amber-400 border-2' : 'border-stone-200/50'
           }`}
           onTouchStart={handleTouchStart}
@@ -351,13 +352,13 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
 
           {/* Track Info */}
           <div className="text-center mb-4">
-            <h2 className="text-2xl font-medium text-stone-900 mb-1">{nowPlaying.track}</h2>
-            <p className="text-lg text-stone-600">{nowPlaying.artist}</p>
-            <p className="text-xs text-stone-500 mt-1">{nowPlaying.album}</p>
+            <h2 className="text-3xl font-medium text-stone-900 mb-1">{nowPlaying.track}</h2>
+            <p className="text-xl text-stone-600">{nowPlaying.artist}</p>
+            <p className="text-sm text-stone-500 mt-1">{nowPlaying.album}</p>
           </div>
 
           {/* Audio Waveform */}
-          <div className="mb-4 flex items-center justify-center gap-1 h-12">
+          <div className="mb-5 flex items-center justify-center gap-1 h-14">
             {[...Array(40)].map((_, i) => {
               const randomHeight1 = 15 + Math.random() * 40;
               const randomHeight2 = 25 + Math.random() * 60;
@@ -407,7 +408,7 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
         </motion.div>
 
         {/* Queue */}
-        <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-8 hover:shadow-lg transition-all duration-300 max-w-sm">
+        <div className="bg-white/40 backdrop-blur-sm rounded-xl border border-stone-200/50 shadow-sm p-5 hover:shadow-lg transition-all duration-300 max-w-md">
           <h2 className="text-sm uppercase tracking-wider text-stone-600 font-medium mb-6">
             Neste i køen
           </h2>
