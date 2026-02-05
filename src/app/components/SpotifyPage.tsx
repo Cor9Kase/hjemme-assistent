@@ -295,10 +295,10 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
         </>
       )}
 
-      <div className="grid grid-cols-[1.2fr_1fr] gap-6 flex-1 relative z-10">
+      <div className="flex gap-6 flex-1 relative z-10 items-start justify-center">
         {/* Now Playing */}
         <motion.div 
-          className={`bg-white/40 backdrop-blur-sm rounded-3xl border shadow-sm p-6 hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer relative ${
+          className={`bg-white/40 backdrop-blur-sm rounded-3xl border shadow-sm p-6 hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer relative max-w-md ${
             locked ? 'border-amber-400 border-2' : 'border-stone-200/50'
           }`}
           onTouchStart={handleTouchStart}
@@ -407,7 +407,7 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
         </motion.div>
 
         {/* Queue */}
-        <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-8 hover:shadow-lg transition-all duration-300">
+        <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-8 hover:shadow-lg transition-all duration-300 max-w-sm">
           <h2 className="text-sm uppercase tracking-wider text-stone-600 font-medium mb-6">
             Neste i køen
           </h2>
