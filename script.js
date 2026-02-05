@@ -481,6 +481,7 @@ async function fetchNowPlaying() {
             document.getElementById('track-name').textContent = 'Ingen sang';
             document.getElementById('track-artist').textContent = 'Start Spotify på en enhet';
             document.getElementById('overview-spotify').textContent = 'Ikke aktiv';
+            document.getElementById('overview-album').innerHTML = '<img src="icons/music.png" alt="" class="album-placeholder">';
             document.querySelector('.vinyl')?.classList.remove('spinning');
         }
     } catch (error) {
