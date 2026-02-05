@@ -244,7 +244,7 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
   }
 
   return (
-    <div className="h-full p-8 pb-16 flex flex-col relative overflow-hidden">
+    <div className="h-full p-5 pb-10 flex flex-col relative overflow-hidden">
       {/* Animated color background */}
       <motion.div 
         className="absolute inset-0 -z-10"
@@ -271,7 +271,7 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
       )}
 
       {/* Header */}
-      <div className="mb-8 relative z-10 flex items-start justify-end">
+      <div className="mb-4 relative z-10 flex items-start justify-end">
         {/* Lock button */}
         <button
           onClick={() => onLockChange?.(!locked)}
@@ -289,7 +289,7 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
       <div className="grid grid-cols-[1.2fr_1fr] gap-6 flex-1 relative z-10">
         {/* Now Playing */}
         <motion.div 
-          className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-10 hover:shadow-lg transition-all duration-300 flex flex-col"
+          className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-6 hover:shadow-lg transition-all duration-300 flex flex-col"
           animate={{
             boxShadow: isPlaying 
               ? `0 0 40px ${colors.primary}20, 0 0 80px ${colors.secondary}10`
@@ -298,27 +298,27 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
           transition={{ duration: 2 }}
         >
           {/* Album Cover */}
-          <div className="flex items-center justify-center mb-8">
-            <div className="w-64 h-64 rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
+          <div className="flex items-center justify-center mb-5">
+            <div className="w-48 h-48 rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
               {nowPlaying.albumArt ? (
                 <img src={nowPlaying.albumArt} alt={nowPlaying.album} className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-stone-300">
-                  <Music className="w-16 h-16 text-stone-500" />
+                  <Music className="w-12 h-12 text-stone-500" />
                 </div>
               )}
             </div>
           </div>
 
           {/* Track Info */}
-          <div className="text-center mb-6">
-            <h2 className="text-3xl font-medium text-stone-900 mb-2">{nowPlaying.track}</h2>
-            <p className="text-xl text-stone-600">{nowPlaying.artist}</p>
-            <p className="text-sm text-stone-500 mt-2">{nowPlaying.album}</p>
+          <div className="text-center mb-4">
+            <h2 className="text-2xl font-medium text-stone-900 mb-1">{nowPlaying.track}</h2>
+            <p className="text-lg text-stone-600">{nowPlaying.artist}</p>
+            <p className="text-xs text-stone-500 mt-1">{nowPlaying.album}</p>
           </div>
 
           {/* Audio Waveform */}
-          <div className="mb-6 flex items-center justify-center gap-1 h-16">
+          <div className="mb-4 flex items-center justify-center gap-1 h-12">
             {[...Array(40)].map((_, i) => {
               const randomHeight1 = 15 + Math.random() * 40;
               const randomHeight2 = 25 + Math.random() * 60;
@@ -348,21 +348,21 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
           </div>
 
           {/* Controls */}
-          <div className="flex items-center justify-center gap-6">
-            <button onClick={() => setLiked(!liked)} className="w-14 h-14 rounded-full hover:bg-stone-100 active:scale-95 transition-all flex items-center justify-center">
-              <Heart className={`w-6 h-6 ${liked ? 'fill-amber-600 text-amber-600' : 'text-stone-600'}`} />
+          <div className="flex items-center justify-center gap-4">
+            <button onClick={() => setLiked(!liked)} className="w-12 h-12 rounded-full hover:bg-stone-100 active:scale-95 transition-all flex items-center justify-center">
+              <Heart className={`w-5 h-5 ${liked ? 'fill-amber-600 text-amber-600' : 'text-stone-600'}`} />
             </button>
-            <button onClick={handlePrev} className="w-14 h-14 rounded-full hover:bg-stone-100 active:scale-95 transition-all flex items-center justify-center">
-              <SkipBack className="w-7 h-7 text-stone-900 fill-stone-900" />
+            <button onClick={handlePrev} className="w-12 h-12 rounded-full hover:bg-stone-100 active:scale-95 transition-all flex items-center justify-center">
+              <SkipBack className="w-6 h-6 text-stone-900 fill-stone-900" />
             </button>
-            <button onClick={handlePlayPause} className="w-20 h-20 rounded-full bg-stone-900 hover:bg-stone-800 active:scale-95 transition-all flex items-center justify-center shadow-lg">
-              {isPlaying ? <Pause className="w-10 h-10 fill-white text-white" /> : <Play className="w-10 h-10 fill-white text-white ml-1" />}
+            <button onClick={handlePlayPause} className="w-16 h-16 rounded-full bg-stone-900 hover:bg-stone-800 active:scale-95 transition-all flex items-center justify-center shadow-lg">
+              {isPlaying ? <Pause className="w-8 h-8 fill-white text-white" /> : <Play className="w-8 h-8 fill-white text-white ml-1" />}
             </button>
-            <button onClick={handleNext} className="w-14 h-14 rounded-full hover:bg-stone-100 active:scale-95 transition-all flex items-center justify-center">
-              <SkipForward className="w-7 h-7 text-stone-900 fill-stone-900" />
+            <button onClick={handleNext} className="w-12 h-12 rounded-full hover:bg-stone-100 active:scale-95 transition-all flex items-center justify-center">
+              <SkipForward className="w-6 h-6 text-stone-900 fill-stone-900" />
             </button>
-            <button className="w-14 h-14 rounded-full hover:bg-stone-100 active:scale-95 transition-all flex items-center justify-center">
-              <Volume2 className="w-6 h-6 text-stone-600" />
+            <button className="w-12 h-12 rounded-full hover:bg-stone-100 active:scale-95 transition-all flex items-center justify-center">
+              <Volume2 className="w-5 h-5 text-stone-600" />
             </button>
           </div>
         </motion.div>

@@ -99,21 +99,21 @@ export function BusPage() {
   }, []);
 
   return (
-    <div className="h-full p-6 pb-12 flex flex-col overflow-y-auto">
+    <div className="h-full p-4 pb-8 flex flex-col overflow-y-auto">
       {/* Departures Grid */}
-      <div className="grid grid-cols-2 gap-4 flex-1 overflow-y-auto">
+      <div className="grid grid-cols-2 gap-3 flex-1 overflow-y-auto">
         {departures.map((bus, i) => (
           <div
             key={i}
-            className={`bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-5 hover:shadow-lg transition-all duration-300 cursor-pointer relative overflow-hidden group ${
+            className={`bg-white/40 backdrop-blur-sm rounded-2xl border border-stone-200/50 shadow-sm p-3 hover:shadow-lg transition-all duration-300 cursor-pointer relative overflow-hidden group ${
               bus.isSoon ? 'ring-2 ring-amber-400' : ''
             }`}
           >
             {/* Hover gradient */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl"></div>
 
             {/* Minutes badge */}
-            <div className={`absolute top-4 right-4 flex items-center gap-2 text-xs font-medium px-3 py-1.5 rounded-full ${
+            <div className={`absolute top-2 right-2 flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-full ${
               bus.isSoon 
                 ? 'text-amber-700 bg-amber-100' 
                 : 'text-stone-700 bg-stone-100'
@@ -121,8 +121,8 @@ export function BusPage() {
               {bus.mins} min
             </div>
 
-            <div className="relative flex items-center gap-3">
-              <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-2xl font-semibold transition-transform duration-300 group-hover:scale-105 ${
+            <div className="relative flex items-center gap-2">
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl font-semibold transition-transform duration-300 group-hover:scale-105 ${
                 bus.isSoon 
                   ? 'bg-amber-600 text-white' 
                   : 'bg-stone-900 text-white'
@@ -130,10 +130,10 @@ export function BusPage() {
                 {bus.line}
               </div>
               <div className="flex-1">
-                <div className="text-[10px] uppercase tracking-wider text-stone-500 mb-0.5">
+                <div className="text-[9px] uppercase tracking-wider text-stone-500 mb-0.5">
                   {bus.stop}
                 </div>
-                <div className="text-base font-medium text-stone-900 leading-tight">
+                <div className="text-sm font-medium text-stone-900 leading-tight">
                   {bus.destination}
                 </div>
               </div>
