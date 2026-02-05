@@ -108,7 +108,11 @@ export default function App() {
           <BusPage />
         </SwiperSlide>
         <SwiperSlide>
-          <SpotifyPage locked={spotifyLocked} onLockChange={setSpotifyLocked} />
+          <SpotifyPage 
+            locked={spotifyLocked} 
+            onLockChange={setSpotifyLocked}
+            isActive={currentSlide === SPOTIFY_SLIDE_INDEX}
+          />
         </SwiperSlide>
       </Swiper>
 

@@ -1,19 +1,16 @@
 import { useState, useEffect } from 'react';
-import { MapPin } from 'lucide-react';
 
 const STOPS = [
-  { id: 'NSR:StopPlace:6372', name: 'Adv. Dehlis plass', short: 'Adv. Dehlis pl.' },
-  { id: 'NSR:StopPlace:6366', name: 'Voldsløkka', short: 'Voldsløkka' }
+  { id: 'NSR:StopPlace:6372', name: 'Adv. Dehlis plass', short: 'ADV. DEHLIS PL.' },
+  { id: 'NSR:StopPlace:6366', name: 'Voldsløkka', short: 'VOLDSLØKKA' }
 ];
 
 interface BusDeparture {
   line: string;
   destination: string;
-  time: string;
   mins: number;
-  isSoon: boolean;
   stop: string;
-  realTime: boolean;
+  isSoon: boolean;
 }
 
 export function BusPage() {
@@ -37,7 +34,10 @@ export function BusPage() {
       try {
         const res = await fetch('https://api.entur.io/journey-planner/v3/graphql', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'ET-Client-Name': 'hjemme-dashboard' },
+          headers: { 
+            'Content-Type': 'application/json', 
+            'ET-Client-Name': 'hjemme-dashboard' 
+          },
           body: JSON.stringify({ query })
         });
         const data = await res.json();
@@ -47,7 +47,6 @@ export function BusPage() {
           const stopData = data.data?.[`stop${i}`];
           if (stopData?.estimatedCalls) {
             stopData.estimatedCalls.forEach((d: any) => {
-              d.stopName = stopData.name;
               d.stopShort = s.short;
               allDepartures.push(d);
             });
@@ -58,9 +57,11 @@ export function BusPage() {
         const filtered = allDepartures.filter((d: any) => {
           const line = d.serviceJourney.journeyPattern.line.publicCode;
           const dest = d.destinationDisplay.frontText;
-          return (line === '54' && dest === 'Kværnerbyen') || 
-                 (line === '37' && dest === 'Helsfyr') ||
-                 (line === '34' && dest === 'Ekeberg hageby');
+          return (
+            (line === '54' && dest === 'Kværnerbyen') || 
+            (line === '37' && dest === 'Helsfyr') ||
+            (line === '34' && dest === 'Ekeberg hageby')
+          );
         });
         
         // Sort by time
@@ -79,11 +80,9 @@ export function BusPage() {
           return {
             line: bus.serviceJourney.journeyPattern.line.publicCode,
             destination: bus.destinationDisplay.frontText,
-            time: `${mins} min`,
             mins,
-            isSoon: mins <= 5,
             stop: bus.stopShort,
-            realTime: true
+            isSoon: mins <= 5
           };
         });
         
@@ -99,52 +98,71 @@ export function BusPage() {
   }, []);
 
   return (
-    <div className="h-full p-2 pb-4 flex flex-col overflow-y-auto">
-      {/* Departures Grid */}
-      <div className="grid grid-cols-2 gap-2 flex-1 overflow-y-auto">
+    <div className="h-full p-6 flex flex-col">
+      {/* Bus Cards Grid */}
+      <div className="grid grid-cols-2 gap-3 flex-1">
         {departures.map((bus, i) => (
-          <div
-            key={i}
-            className={`bg-white/40 backdrop-blur-sm rounded-xl border border-stone-200/50 shadow-sm p-2 hover:shadow-lg transition-all duration-300 cursor-pointer relative overflow-hidden group ${
-              bus.isSoon ? 'ring-1 ring-amber-400' : ''
-            }`}
-          >
-            {/* Hover gradient */}
-            <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-xl"></div>
-
-            <div className="relative flex flex-row items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <div className={`w-10 h-10 flex-shrink-0 rounded-lg flex items-center justify-center text-lg font-semibold transition-transform duration-300 group-hover:scale-105 ${
-                  bus.isSoon 
-                    ? 'bg-amber-600 text-white' 
-                    : 'bg-stone-900 text-white'
-                }`}>
-                  {bus.line}
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="text-[9px] uppercase tracking-wide text-stone-500 leading-none">
-                    {bus.stop}
-                  </div>
-                  <div className="text-xs font-medium text-stone-900 leading-tight mt-0.5">
-                    {bus.destination}
-                  </div>
-                </div>
-              </div>
-              <div className={`flex-shrink-0 text-lg font-medium ${
-                bus.isSoon ? 'text-amber-700' : 'text-stone-900'
-              }`}>
-                {bus.mins}<span className="text-[10px] ml-0.5">min</span>
-              </div>
-            </div>
-          </div>
+          <BusCard key={i} bus={bus} />
         ))}
       </div>
+    </div>
+  );
+}
 
-      {/* Legend */}
-      <div className="mt-6 flex items-center justify-center gap-8 text-sm text-stone-500">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded-full bg-amber-400"></div>
-          <span>Avgår innen 5 min</span>
+interface BusCardProps {
+  bus: BusDeparture;
+}
+
+function BusCard({ bus }: BusCardProps) {
+  // Determine color based on bus line
+  const getBadgeColor = () => {
+    if (bus.isSoon) return 'bg-amber-600';
+    if (bus.line === '34') return 'bg-blue-600';
+    return 'bg-stone-900';
+  };
+  
+  const getTextColor = () => {
+    if (bus.isSoon) return 'text-amber-600';
+    if (bus.line === '34') return 'text-blue-600';
+    return 'text-stone-900';
+  };
+  
+  const getRingColor = () => {
+    if (bus.isSoon) return 'ring-amber-500';
+    return 'border border-stone-200';
+  };
+
+  return (
+    <div 
+      className={`bg-white rounded-xl p-3 shadow-sm transition-all duration-300 hover:shadow-md flex flex-col ${
+        bus.isSoon ? 'ring-2 ring-amber-500' : 'border border-stone-200'
+      }`}
+    >
+      {/* Top section: Badge + Time */}
+      <div className="flex items-start justify-between mb-auto">
+        {/* Bus number badge */}
+        <div 
+          className={`w-16 h-16 rounded-xl flex items-center justify-center flex-shrink-0 ${getBadgeColor()}`}
+        >
+          <span className="text-white text-3xl font-bold">{bus.line}</span>
+        </div>
+        
+        {/* Time */}
+        <div className="flex-shrink-0 text-right">
+          <div className={`text-5xl font-bold leading-none ${getTextColor()}`}>
+            {bus.mins}
+          </div>
+          <div className="text-xs text-stone-600 mt-1">min</div>
+        </div>
+      </div>
+      
+      {/* Bottom section: Stop + Destination */}
+      <div className="mt-4">
+        <div className="text-[9px] text-stone-500 font-medium tracking-wider mb-1.5">
+          {bus.stop}
+        </div>
+        <div className="text-2xl font-semibold text-stone-900 leading-tight">
+          {bus.destination}
         </div>
       </div>
     </div>

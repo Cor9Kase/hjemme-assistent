@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Wind, Droplets, Eye } from 'lucide-react';
 import { WeatherIcon } from './WeatherIcon';
+import { useDragScroll } from '../hooks/useDragScroll';
 
 const API_BASE = '';
 
@@ -27,12 +28,50 @@ export function WeatherPage() {
     temp: 0, condition: '--', symbol: 'cloudy', wind: 0, humidity: 0, feelsLike: 0,
     hourly: [], daily: []
   });
+  
+  const hourlyScrollRef = useDragScroll<HTMLDivElement>();
+  const dailyScrollRef = useDragScroll<HTMLDivElement>();
 
   useEffect(() => {
     async function fetchWeather() {
       try {
-        const res = await fetch(`${API_BASE}/weather`);
-        const data = await res.json();
+        // Mock data for demo
+        const now = new Date();
+        const mockTimeseries = [];
+        
+        // Generate mock hourly data for next 12 hours
+        for (let i = 0; i < 48; i++) {
+          const time = new Date(now.getTime() + i * 60 * 60 * 1000);
+          mockTimeseries.push({
+            time: time.toISOString(),
+            data: {
+              instant: {
+                details: {
+                  air_temperature: 8 + Math.sin(i / 4) * 3,
+                  wind_speed: 3 + Math.random() * 2,
+                  relative_humidity: 65 + Math.random() * 10
+                }
+              },
+              next_1_hours: {
+                summary: {
+                  symbol_code: i % 6 === 0 ? 'rain' : i % 3 === 0 ? 'cloudy' : 'partlycloudy_day'
+                }
+              },
+              next_6_hours: {
+                summary: {
+                  symbol_code: 'partlycloudy_day'
+                }
+              }
+            }
+          });
+        }
+        
+        const data = {
+          properties: {
+            timeseries: mockTimeseries
+          }
+        };
+        
         const timeseries = data.properties?.timeseries || [];
         
         if (timeseries.length === 0) return;
@@ -118,11 +157,6 @@ export function WeatherPage() {
               <div className="text-2xl font-medium text-stone-900">{weather.humidity}</div>
               <div className="text-sm text-stone-500 mt-1">%</div>
             </div>
-            <div className="text-center">
-              <Eye className="w-8 h-8 text-stone-500 mx-auto mb-2" />
-              <div className="text-2xl font-medium text-stone-900">{weather.visibility}</div>
-              <div className="text-sm text-stone-500 mt-1">km</div>
-            </div>
           </div>
         </div>
       </div>
@@ -130,7 +164,7 @@ export function WeatherPage() {
       {/* Hourly & Daily Forecast */}
       <div className="grid grid-cols-2 gap-6 flex-1 mb-8 min-h-0">
         {/* Hourly */}
-        <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-6 hover:shadow-lg transition-all duration-300 overflow-y-auto max-h-full">
+        <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-6 hover:shadow-lg transition-all duration-300 overflow-y-auto max-h-full" ref={hourlyScrollRef}>
           <h2 className="text-sm uppercase tracking-wider text-stone-600 font-medium mb-6">
             Time for time
           </h2>
@@ -148,7 +182,7 @@ export function WeatherPage() {
         </div>
 
         {/* Daily */}
-        <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-6 hover:shadow-lg transition-all duration-300 overflow-y-auto max-h-full">
+        <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-6 hover:shadow-lg transition-all duration-300 overflow-y-auto max-h-full" ref={dailyScrollRef}>
           <h2 className="text-sm uppercase tracking-wider text-stone-600 font-medium mb-6">
             Neste dager
           </h2>

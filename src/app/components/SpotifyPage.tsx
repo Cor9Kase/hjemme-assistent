@@ -99,9 +99,10 @@ function extractColors(imageUrl: string): Promise<ExtractedColors> {
 interface SpotifyPageProps {
   locked?: boolean;
   onLockChange?: (locked: boolean) => void;
+  isActive?: boolean;
 }
 
-export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) {
+export function SpotifyPage({ locked = false, onLockChange, isActive = true }: SpotifyPageProps) {
   const [nowPlaying, setNowPlaying] = useState<TrackInfo | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -152,30 +153,20 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
   useEffect(() => {
     async function fetchNowPlaying() {
       try {
-        const res = await fetch(`${API_BASE}/spotify/now-playing`);
-        if (res.ok) {
-          const data = await res.json();
-          if (data.item) {
-            const durationMs = data.item.duration_ms || 0;
-            const progressMs = data.progress_ms || 0;
-            
-            setNowPlaying({
-              track: data.item.name,
-              artist: data.item.artists?.map((a: any) => a.name).join(', ') || '',
-              album: data.item.album?.name || '',
-              albumArt: data.item.album?.images?.[0]?.url || '',
-              duration: formatTime(durationMs),
-              currentTime: formatTime(progressMs),
-              progress: durationMs > 0 ? (progressMs / durationMs) * 100 : 0,
-              isPlaying: data.is_playing
-            });
-            setIsPlaying(data.is_playing);
-            setIsConnected(true);
-          } else {
-            setIsConnected(true);
-            setNowPlaying(null);
-          }
-        }
+        // Mock data for demo - simulate active playback
+        const mockTrack: TrackInfo = {
+          track: "Midnight City",
+          artist: "M83",
+          album: "Hurry Up, We're Dreaming",
+          albumArt: "https://images.unsplash.com/photo-1614613535308-eb5fbd3d2c17?w=500&h=500&fit=crop",
+          duration: "4:04",
+          currentTime: "2:15",
+          progress: 55,
+          isPlaying: true
+        };
+        setNowPlaying(mockTrack);
+        setIsPlaying(mockTrack.isPlaying);
+        setIsConnected(true);
       } catch (e) {
         console.error('Spotify error:', e);
         setIsConnected(false);
@@ -184,15 +175,14 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
     
     async function fetchQueue() {
       try {
-        const res = await fetch(`${API_BASE}/spotify/queue`);
-        if (res.ok) {
-          const data = await res.json();
-          const queueItems = (data.queue || []).slice(0, 3).map((item: any) => ({
-            track: item.name,
-            artist: item.artists?.map((a: any) => a.name).join(', ') || ''
-          }));
-          setQueue(queueItems);
-        }
+        // Mock queue data
+        const mockQueue = [
+          { track: "Intro", artist: "The xx" },
+          { track: "Video Games", artist: "Lana Del Rey" },
+          { track: "Bloodflow", artist: "Grandbrothers" },
+          { track: "To Build a Home", artist: "The Cinematic Orchestra" }
+        ];
+        setQueue(mockQueue);
       } catch (e) {
         console.error('Queue error:', e);
       }
@@ -270,15 +260,17 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
 
   return (
     <div className="h-full p-5 pb-10 pt-16 flex flex-col relative overflow-hidden">
-      {/* Animated color background */}
-      <motion.div 
-        className="absolute inset-0 -z-10"
-        animate={{ background: getGradient() }}
-        transition={{ duration: 2, ease: "easeInOut" }}
-      />
+      {/* Animated color background - only show when active */}
+      {isActive && (
+        <motion.div 
+          className="absolute inset-0 -z-10"
+          animate={{ background: getGradient() }}
+          transition={{ duration: 2, ease: "easeInOut" }}
+        />
+      )}
 
-      {/* Pulsing orbs */}
-      {isPlaying && (
+      {/* Pulsing orbs - only show when active */}
+      {isActive && isPlaying && (
         <>
           <motion.div
             className="absolute w-96 h-96 rounded-full blur-3xl opacity-40"
