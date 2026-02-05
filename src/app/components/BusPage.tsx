@@ -99,13 +99,13 @@ export function BusPage() {
   }, []);
 
   return (
-    <div className="h-full p-2 pb-4 flex flex-col overflow-y-auto">
+    <div className="h-full p-3 pb-6 flex flex-col overflow-y-auto">
       {/* Departures Grid */}
-      <div className="grid grid-cols-2 gap-2 flex-1 overflow-y-auto">
+      <div className="grid grid-cols-2 gap-3 flex-1 overflow-y-auto">
         {departures.map((bus, i) => (
           <div
             key={i}
-            className={`bg-white/40 backdrop-blur-sm rounded-2xl border border-stone-200/50 shadow-sm p-2 hover:shadow-lg transition-all duration-300 cursor-pointer relative overflow-hidden group ${
+            className={`bg-white/40 backdrop-blur-sm rounded-2xl border border-stone-200/50 shadow-sm p-3 hover:shadow-lg transition-all duration-300 cursor-pointer relative overflow-hidden group min-h-[70px] ${
               bus.isSoon ? 'ring-2 ring-amber-400' : ''
             }`}
           >
