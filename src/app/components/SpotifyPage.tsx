@@ -113,8 +113,22 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
     accent: '#F59E0B',
   });
   const lastAlbumArt = useRef<string>('');
+  const lastTap = useRef<number>(0);
 
   const [queue, setQueue] = useState<{track: string; artist: string}[]>([]);
+
+  // Double-tap to lock/unlock
+  const handleDoubleTap = () => {
+    const now = Date.now();
+    const timeSinceLastTap = now - lastTap.current;
+    
+    if (timeSinceLastTap < 300 && timeSinceLastTap > 0) {
+      // Double tap detected
+      onLockChange?.(!locked);
+    }
+    
+    lastTap.current = now;
+  };
 
   // Extract colors when album art changes
   useEffect(() => {
@@ -270,26 +284,13 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
         </>
       )}
 
-      {/* Header */}
-      <div className="mb-4 relative z-10 flex items-start justify-end">
-        {/* Lock button */}
-        <button
-          onClick={() => onLockChange?.(!locked)}
-          className={`p-3 rounded-xl transition-all ${
-            locked 
-              ? 'bg-amber-100 text-amber-700' 
-              : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
-          }`}
-          title={locked ? 'Lås opp (går tilbake automatisk)' : 'Lås (bli på denne siden)'}
-        >
-          {locked ? <Lock className="w-6 h-6" /> : <Unlock className="w-6 h-6" />}
-        </button>
-      </div>
-
       <div className="grid grid-cols-[1.2fr_1fr] gap-6 flex-1 relative z-10">
         {/* Now Playing */}
         <motion.div 
-          className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-6 hover:shadow-lg transition-all duration-300 flex flex-col"
+          className={`bg-white/40 backdrop-blur-sm rounded-3xl border shadow-sm p-6 hover:shadow-lg transition-all duration-300 flex flex-col cursor-pointer relative ${
+            locked ? 'border-amber-400 border-2' : 'border-stone-200/50'
+          }`}
+          onClick={handleDoubleTap}
           animate={{
             boxShadow: isPlaying 
               ? `0 0 40px ${colors.primary}20, 0 0 80px ${colors.secondary}10`
@@ -297,6 +298,12 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
           }}
           transition={{ duration: 2 }}
         >
+          {/* Lock indicator */}
+          {locked && (
+            <div className="absolute top-3 right-3 bg-amber-100 text-amber-700 p-2 rounded-full z-10">
+              <Lock className="w-4 h-4" />
+            </div>
+          )}
           {/* Album Cover */}
           <div className="flex items-center justify-center mb-5">
             <div className="w-48 h-48 rounded-2xl overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.3)]">
