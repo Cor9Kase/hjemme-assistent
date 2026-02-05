@@ -317,11 +317,25 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
             <p className="text-sm text-stone-500 mt-2">{nowPlaying.album}</p>
           </div>
 
-          {/* Progress Bar (no timestamps) */}
-          <div className="mb-6">
-            <div className="w-full h-2 bg-stone-200 rounded-full overflow-hidden">
-              <div className="h-full bg-stone-900 transition-all duration-300" style={{ width: `${nowPlaying.progress}%` }}></div>
-            </div>
+          {/* Audio Waveform */}
+          <div className="mb-6 flex items-center justify-center gap-1 h-16">
+            {[...Array(40)].map((_, i) => (
+              <motion.div
+                key={i}
+                className="w-1 bg-stone-900 rounded-full"
+                animate={isPlaying ? {
+                  height: ['20%', `${Math.random() * 80 + 20}%`, '20%'],
+                } : {
+                  height: '20%'
+                }}
+                transition={{
+                  duration: 0.5 + Math.random() * 0.5,
+                  repeat: Infinity,
+                  ease: 'easeInOut',
+                  delay: i * 0.02
+                }}
+              />
+            ))}
           </div>
 
           {/* Controls */}
