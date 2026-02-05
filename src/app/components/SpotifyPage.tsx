@@ -319,23 +319,32 @@ export function SpotifyPage({ locked = false, onLockChange }: SpotifyPageProps) 
 
           {/* Audio Waveform */}
           <div className="mb-6 flex items-center justify-center gap-1 h-16">
-            {[...Array(40)].map((_, i) => (
-              <motion.div
-                key={i}
-                className="w-1 bg-stone-900 rounded-full"
-                animate={isPlaying ? {
-                  height: ['20%', `${Math.random() * 80 + 20}%`, '20%'],
-                } : {
-                  height: '20%'
-                }}
-                transition={{
-                  duration: 0.5 + Math.random() * 0.5,
-                  repeat: Infinity,
-                  ease: 'easeInOut',
-                  delay: i * 0.02
-                }}
-              />
-            ))}
+            {[...Array(40)].map((_, i) => {
+              const randomHeight1 = 15 + Math.random() * 40;
+              const randomHeight2 = 25 + Math.random() * 60;
+              const randomHeight3 = 10 + Math.random() * 50;
+              const randomDuration = 0.4 + Math.random() * 0.8;
+              const randomDelay = Math.random() * 0.5;
+              
+              return (
+                <motion.div
+                  key={i}
+                  className="w-1 bg-stone-900 rounded-full"
+                  animate={isPlaying ? {
+                    height: [`${randomHeight1}%`, `${randomHeight2}%`, `${randomHeight3}%`, `${randomHeight1}%`],
+                  } : {
+                    height: '15%'
+                  }}
+                  transition={{
+                    duration: randomDuration,
+                    repeat: Infinity,
+                    repeatType: 'mirror',
+                    ease: 'easeInOut',
+                    delay: randomDelay
+                  }}
+                />
+              );
+            })}
           </div>
 
           {/* Controls */}
