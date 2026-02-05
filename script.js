@@ -1,5 +1,27 @@
 const API_BASE = 'http://192.168.1.138:5001';
 
+// --- THEME SWITCHER ---
+const themes = ['paper', 'risograph'];
+const themeIcons = { paper: '◐', risograph: '◉' };
+
+function setTheme(theme) {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('dashboard-theme', theme);
+    document.getElementById('theme-toggle').textContent = themeIcons[theme] || '◐';
+}
+
+function toggleTheme() {
+    const current = document.documentElement.getAttribute('data-theme') || 'paper';
+    const next = themes[(themes.indexOf(current) + 1) % themes.length];
+    setTheme(next);
+}
+
+// Load saved theme
+const savedTheme = localStorage.getItem('dashboard-theme') || 'paper';
+setTheme(savedTheme);
+
+document.getElementById('theme-toggle').addEventListener('click', toggleTheme);
+
 // --- SWIPER ---
 const swiper = new Swiper('.main-swiper', {
     pagination: { el: '.swiper-pagination', clickable: true },
@@ -131,21 +153,53 @@ const WEATHER_ICONS = {
     </svg>`
 };
 
+// PNG-ikoner (fra Corny)
+const WEATHER_PNG = {
+    sun: 'icons/sol.png',
+    night: 'icons/natt.png',
+    cloudy: 'icons/skyet.png',
+    cloudyNight: 'icons/skyet-natt.png',
+    rain: 'icons/regn.png',
+    snow: 'icons/sno.png',
+    thunder: 'icons/torden.png',
+    wind: 'icons/vind.png'
+};
+
 function getWeatherIcon(symbolCode) {
-    // Fjern dag/natt-suffix for å finne basis-ikon
     const base = symbolCode.replace(/_day|_night|_polartwilight/g, '');
     const isNight = symbolCode.includes('_night');
     
-    // Sjekk om vi har natt-variant
-    if (isNight && WEATHER_ICONS[symbolCode]) {
-        return WEATHER_ICONS[symbolCode];
+    // Torden
+    if (['thunder', 'thunderstorm', 'lightrainandthunder', 'rainandthunder', 'heavyrainandthunder', 'lightrainshowersandthunder', 'rainshowersandthunder', 'heavyrainshowersandthunder', 'lightsleetandthunder', 'sleetandthunder', 'heavysleetandthunder', 'lightsnowandthunder', 'snowandthunder', 'heavysnowandthunder'].includes(base)) {
+        return `<img src="${WEATHER_PNG.thunder}" alt="Torden">`;
     }
-    if (isNight && WEATHER_ICONS[base + '_night']) {
-        return WEATHER_ICONS[base + '_night'];
+    // Snø-varianter
+    if (['snow', 'lightsnow', 'heavysnow', 'snowshowers', 'lightsnowshowers', 'heavysnowshowers'].includes(base)) {
+        return `<img src="${WEATHER_PNG.snow}" alt="Snø">`;
+    }
+    // Regn-varianter
+    if (['rain', 'lightrain', 'heavyrain', 'rainshowers', 'lightrainshowers', 'heavyrainshowers', 'sleet', 'lightsleet', 'heavysleet', 'lightsleetshowers', 'sleetshowers', 'heavysleetshowers'].includes(base)) {
+        return `<img src="${WEATHER_PNG.rain}" alt="Regn">`;
+    }
+    // Natt - klart
+    if (isNight && ['clearsky', 'fair'].includes(base)) {
+        return `<img src="${WEATHER_PNG.night}" alt="Natt">`;
+    }
+    // Natt - skyet
+    if (isNight && ['partlycloudy', 'cloudy'].includes(base)) {
+        return `<img src="${WEATHER_PNG.cloudyNight}" alt="Skyet natt">`;
+    }
+    // Skyet (dag)
+    if (['cloudy', 'partlycloudy', 'fog'].includes(base)) {
+        return `<img src="${WEATHER_PNG.cloudy}" alt="Overskyet">`;
+    }
+    // Sol/klarvær (dag)
+    if (['clearsky', 'fair'].includes(base)) {
+        return `<img src="${WEATHER_PNG.sun}" alt="Sol">`;
     }
     
-    // Bruk basis-ikon eller fallback til skyet
-    return WEATHER_ICONS[base] || WEATHER_ICONS['cloudy'];
+    // Fallback
+    return `<img src="${WEATHER_PNG.cloudy}" alt="Vær">`;
 }
 
 async function fetchWeather() {
@@ -189,10 +243,9 @@ function renderWeather() {
         const time = new Date(item.time).getHours();
         const t = Math.round(item.data.instant.details.air_temperature);
         const sym = item.data.next_1_hours?.summary?.symbol_code || 'cloudy';
-        const cond = CONDITIONS[sym.split('_')[0]] || '';
         return `<div class="forecast-item">
             <span class="forecast-time">${String(time).padStart(2, '0')}:00</span>
-            <span class="forecast-condition">${cond}</span>
+            <span class="forecast-icon">${getWeatherIcon(sym)}</span>
             <span class="forecast-temp">${t}°</span>
         </div>`;
     }).join('');
@@ -212,9 +265,11 @@ function renderWeather() {
         const min = Math.round(Math.min(...info.temps));
         const max = Math.round(Math.max(...info.temps));
         const dayName = new Date(date).toLocaleDateString('no-NO', { weekday: 'long' });
-        return `<div class="forecast-item">
+        // Finn mest representative symbol (middag-tid, eller mest vanlige)
+        const midSymbol = info.symbols[Math.floor(info.symbols.length / 2)] || info.symbols[0] || 'cloudy';
+        return `<div class="forecast-item forecast-day">
             <span class="forecast-time">${dayName}</span>
-            <span class="forecast-condition"></span>
+            <span class="forecast-icon">${getWeatherIcon(midSymbol)}</span>
             <span class="forecast-temp">${max}° / ${min}°</span>
         </div>`;
     }).join('');
