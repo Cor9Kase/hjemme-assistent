@@ -180,4 +180,18 @@
     font-weight: var(--font-weight-normal);
     line-height: 1.5;
   }
+
+  /* Touch-friendly scrolling */
+  .overflow-y-auto,
+  .overflow-x-auto,
+  .overflow-auto {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+
+  /* Smooth scrolling on all devices */
+  * {
+    scroll-behavior: smooth;
+  }
 }

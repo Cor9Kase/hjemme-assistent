@@ -128,9 +128,9 @@ export function WeatherPage() {
       </div>
 
       {/* Hourly & Daily Forecast */}
-      <div className="grid grid-cols-2 gap-6 flex-1 mb-8">
+      <div className="grid grid-cols-2 gap-6 flex-1 mb-8 min-h-0">
         {/* Hourly */}
-        <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-6 hover:shadow-lg transition-all duration-300 overflow-y-auto">
+        <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-6 hover:shadow-lg transition-all duration-300 overflow-y-auto max-h-full">
           <h2 className="text-sm uppercase tracking-wider text-stone-600 font-medium mb-6">
             Time for time
           </h2>
@@ -148,7 +148,7 @@ export function WeatherPage() {
         </div>
 
         {/* Daily */}
-        <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-6 hover:shadow-lg transition-all duration-300 overflow-y-auto">
+        <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-6 hover:shadow-lg transition-all duration-300 overflow-y-auto max-h-full">
           <h2 className="text-sm uppercase tracking-wider text-stone-600 font-medium mb-6">
             Neste dager
           </h2>
