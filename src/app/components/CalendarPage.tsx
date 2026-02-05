@@ -28,12 +28,12 @@ export function CalendarPage() {
         const res = await fetch(`${API_BASE}/events`);
         const events = await res.json();
         
-        // Generate 7 days starting from today
+        // Generate 14 days starting from today
         const today = new Date();
         setMonthName(today.toLocaleDateString('no-NO', { month: 'long', year: 'numeric' }));
         
         const weekDays: DayInfo[] = [];
-        for (let i = 0; i < 7; i++) {
+        for (let i = 0; i < 14; i++) {
           const d = new Date(today);
           d.setDate(today.getDate() + i);
           const dateStr = d.toISOString().split('T')[0];
@@ -73,11 +73,11 @@ export function CalendarPage() {
   const selectedDay = days[selectedIdx];
 
   return (
-    <div className="h-full p-8 flex flex-col">
+    <div className="h-full p-8 pb-16 flex flex-col">
 
       <div className="grid grid-cols-[auto_1fr] gap-6 flex-1">
         {/* Week View */}
-        <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-6 w-[200px] hover:shadow-lg transition-all duration-300">
+        <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-6 w-[200px] hover:shadow-lg transition-all duration-300 overflow-y-auto">
           <h2 className="text-sm uppercase tracking-wider text-stone-600 font-medium mb-6">
             Denne uken
           </h2>

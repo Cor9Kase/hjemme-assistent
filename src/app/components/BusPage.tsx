@@ -99,7 +99,7 @@ export function BusPage() {
   }, []);
 
   return (
-    <div className="h-full p-8 flex flex-col">
+    <div className="h-full p-8 pb-16 flex flex-col overflow-y-auto">
       {/* Departures Grid */}
       <div className="grid grid-cols-2 gap-6 flex-1 overflow-y-auto">
         {departures.map((bus, i) => (

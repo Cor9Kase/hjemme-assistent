@@ -43,7 +43,7 @@ export function WeatherPage() {
         const baseSymbol = symbol.split('_')[0];
         
         // Hourly forecast
-        const hourly = timeseries.slice(1, 7).map((item: any) => ({
+        const hourly = timeseries.slice(1, 13).map((item: any) => ({
           time: new Date(item.time).toLocaleTimeString('no-NO', { hour: '2-digit', minute: '2-digit' }),
           temp: Math.round(item.data.instant.details.air_temperature),
           symbol: item.data.next_1_hours?.summary?.symbol_code || 'cloudy'
@@ -90,7 +90,7 @@ export function WeatherPage() {
   }, []);
 
   return (
-    <div className="h-full p-8 flex flex-col">
+    <div className="h-full p-8 pb-16 flex flex-col overflow-y-auto">
       {/* Current Weather Hero */}
       <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-10 mb-6 group hover:shadow-lg transition-all duration-300">
         <div className="absolute inset-0 bg-gradient-to-br from-amber-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
@@ -128,9 +128,9 @@ export function WeatherPage() {
       </div>
 
       {/* Hourly & Daily Forecast */}
-      <div className="grid grid-cols-2 gap-6 flex-1">
+      <div className="grid grid-cols-2 gap-6 flex-1 mb-8">
         {/* Hourly */}
-        <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-6 hover:shadow-lg transition-all duration-300">
+        <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-6 hover:shadow-lg transition-all duration-300 overflow-y-auto">
           <h2 className="text-sm uppercase tracking-wider text-stone-600 font-medium mb-6">
             Time for time
           </h2>
@@ -148,7 +148,7 @@ export function WeatherPage() {
         </div>
 
         {/* Daily */}
-        <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-6 hover:shadow-lg transition-all duration-300">
+        <div className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-6 hover:shadow-lg transition-all duration-300 overflow-y-auto">
           <h2 className="text-sm uppercase tracking-wider text-stone-600 font-medium mb-6">
             Neste dager
           </h2>

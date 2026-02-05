@@ -187,7 +187,7 @@ export function OverviewPage({ onNavigate }: OverviewPageProps) {
   }, []);
 
   return (
-    <div className="h-full p-8 flex flex-col">
+    <div className="h-full p-8 pb-16 flex flex-col">
       {/* Large Clock */}
       <div className="text-center mb-10">
         <time className="block text-[120px] font-light tracking-tight text-stone-900 leading-none">
