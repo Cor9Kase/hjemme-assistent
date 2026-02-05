@@ -1,0 +1,148 @@
+import { useState, useEffect } from 'react';
+import { Cloud, Calendar, Bus, Music } from 'lucide-react';
+import { WeatherIcon } from './WeatherIcon';
+
+interface OverviewPageProps {
+  onNavigate: (index: number) => void;
+}
+
+export function OverviewPage({ onNavigate }: OverviewPageProps) {
+  const [clock, setClock] = useState('00:00');
+  const [date, setDate] = useState('');
+
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setClock(
+        now.toLocaleTimeString('no-NO', {
+          hour: '2-digit',
+          minute: '2-digit'
+        })
+      );
+      setDate(
+        now.toLocaleDateString('no-NO', {
+          weekday: 'long',
+          day: 'numeric',
+          month: 'long'
+        })
+      );
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const todayEvents = [
+    { time: '10:00', title: 'Møte med teamet', owner: 'cornelius' },
+    { time: '14:00', title: 'Lege', owner: 'ida' },
+  ];
+
+  const nextBus = { line: '54', destination: 'Kværnerbyen', time: '3 min' };
+
+  return (
+    <div className="h-full p-8 flex flex-col">
+      {/* Large Clock */}
+      <div className="text-center mb-10">
+        <time className="block text-[120px] font-light tracking-tight text-stone-900 leading-none">
+          {clock}
+        </time>
+        <div className="mt-2 text-2xl text-stone-600 capitalize">{date}</div>
+      </div>
+
+      {/* Grid of Cards */}
+      <div className="grid grid-cols-3 gap-6 flex-1">
+        
+        {/* Weather Card */}
+        <div 
+          onClick={() => onNavigate(1)}
+          className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-8 flex flex-col items-center justify-center group hover:shadow-lg transition-all duration-300 cursor-pointer"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-amber-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
+          <div className="relative w-24 h-24 mb-4 transition-transform duration-500 group-hover:scale-110">
+            <WeatherIcon symbol="partlycloudy_day" size={96} />
+          </div>
+          <div className="relative text-5xl font-light text-stone-900 mb-2">12°</div>
+          <div className="relative text-lg text-stone-600">Delvis skyet</div>
+          <div className="relative mt-4 text-sm text-stone-500 uppercase tracking-wider">Oslo</div>
+        </div>
+
+        {/* Calendar Card */}
+        <div 
+          onClick={() => onNavigate(2)}
+          className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-8 flex flex-col group hover:shadow-lg transition-all duration-300 cursor-pointer"
+        >
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
+          <div className="relative flex items-center gap-3 mb-6">
+            <Calendar className="w-6 h-6 text-stone-600" />
+            <span className="text-sm uppercase tracking-wider text-stone-600 font-medium">I dag</span>
+          </div>
+          <div className="relative space-y-4 flex-1">
+            {todayEvents.map((event, i) => (
+              <div key={i} className="flex items-start gap-4">
+                <span className="text-xl font-medium text-stone-900 min-w-[70px]">
+                  {event.time}
+                </span>
+                <div className="flex-1">
+                  <div className="text-lg text-stone-700">{event.title}</div>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className={`w-2 h-2 rounded-full ${
+                      event.owner === 'ida' ? 'bg-amber-600' : 'bg-stone-900'
+                    }`}></span>
+                    <span className="text-sm text-stone-500 capitalize">{event.owner}</span>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Bus & Music Combined Card */}
+        <div className="flex flex-col gap-6">
+          {/* Bus Card */}
+          <div 
+            onClick={() => onNavigate(3)}
+            className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-6 group hover:shadow-lg transition-all duration-300 cursor-pointer flex-1"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-green-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
+            <div className="relative flex items-center gap-3 mb-4">
+              <Bus className="w-5 h-5 text-stone-600" />
+              <span className="text-xs uppercase tracking-wider text-stone-600 font-medium">Neste buss</span>
+            </div>
+            <div className="relative flex items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-stone-900 text-white flex items-center justify-center text-2xl font-semibold">
+                {nextBus.line}
+              </div>
+              <div className="flex-1">
+                <div className="text-base font-medium text-stone-900">
+                  {nextBus.destination}
+                </div>
+                <div className="text-2xl font-light text-amber-600 mt-1">
+                  {nextBus.time}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Music Card */}
+          <div 
+            onClick={() => onNavigate(4)}
+            className="bg-white/40 backdrop-blur-sm rounded-3xl border border-stone-200/50 shadow-sm p-6 group hover:shadow-lg transition-all duration-300 cursor-pointer flex-1 flex flex-col items-center justify-center"
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-50/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-3xl"></div>
+            <div className="relative">
+              <Music className="w-12 h-12 text-stone-600 mb-3 mx-auto" />
+              <div className="text-base text-stone-700 text-center">Northern Lights</div>
+              <div className="text-sm text-stone-500 text-center mt-1">Aurora</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Swipe hint */}
+      <div className="text-center mt-6 text-sm text-stone-400">
+        Sveip for å se mer →
+      </div>
+    </div>
+  );
+}
